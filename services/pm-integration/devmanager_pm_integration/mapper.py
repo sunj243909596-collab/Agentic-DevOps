@@ -10,6 +10,7 @@
     fields = iteration_to_orm_fields(dto)
     await iteration_dao.upsert_from_pm(**fields)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -81,23 +82,43 @@ def issue_assignment_to_orm_fields(dto: IssueAssignmentDTO) -> dict[str, Any]:
 # ── 字段白名单（防御 DTO 越界） ─────────────────────────────────────────────
 
 
-_ITERATION_FIELDS = frozenset(iteration_to_orm_fields(IterationDTO(
-    id="x", name="x", start_date=__import__("datetime").date(2026, 1, 1),
-    end_date=__import__("datetime").date(2026, 1, 7), status="planning",
-)).keys())
+_ITERATION_FIELDS = frozenset(
+    iteration_to_orm_fields(
+        IterationDTO(
+            id="x",
+            name="x",
+            start_date=__import__("datetime").date(2026, 1, 1),
+            end_date=__import__("datetime").date(2026, 1, 7),
+            status="planning",
+        )
+    ).keys()
+)
 
-_ISSUE_FIELDS = frozenset(issue_to_orm_fields(IssueDTO(
-    id="x", key="x-1", title="x", type="task", priority="low", status="open",
-)).keys())
+_ISSUE_FIELDS = frozenset(
+    issue_to_orm_fields(
+        IssueDTO(
+            id="x",
+            key="x-1",
+            title="x",
+            type="task",
+            priority="low",
+            status="open",
+        )
+    ).keys()
+)
 
-_ASSIGNMENT_FIELDS = frozenset(issue_assignment_to_orm_fields(IssueAssignmentDTO(
-    issue_id="x", user_id="u", role="assignee",
-)).keys())
+_ASSIGNMENT_FIELDS = frozenset(
+    issue_assignment_to_orm_fields(
+        IssueAssignmentDTO(
+            issue_id="x",
+            user_id="u",
+            role="assignee",
+        )
+    ).keys()
+)
 
 
-def filter_known_fields(
-    fields: dict[str, Any], *, entity: str
-) -> dict[str, Any]:
+def filter_known_fields(fields: dict[str, Any], *, entity: str) -> dict[str, Any]:
     """白名单过滤：丢弃 ORM 不认识的字段，防止 mapper 扩展时污染 ORM。"""
     if entity == "iteration":
         allowed = _ITERATION_FIELDS

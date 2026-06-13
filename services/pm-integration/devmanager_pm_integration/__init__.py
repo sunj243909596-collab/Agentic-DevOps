@@ -1,4 +1,5 @@
 """DevManager-Agent — 自研需求平台 (PM) integration package."""
+
 from __future__ import annotations
 
 from devmanager_pm_integration.config import PMIntegrationConfig, load_config

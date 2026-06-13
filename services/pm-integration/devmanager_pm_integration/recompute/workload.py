@@ -6,6 +6,7 @@
 - 'all' 视为全量
 - in_progress / open / done 视 PM 平台 status 字面值而定（v1 简化：'open' | 'in_progress' | 'done'）
 """
+
 from __future__ import annotations
 
 import uuid
@@ -51,7 +52,9 @@ async def recompute_workload(
     for person in persons:
         # JOIN issues via issue_assignment，按 person_id 过滤；按 status 聚合
         rows = await _aggregate_for_person(
-            session, person_id=person.person_id, cutoff=cutoff,
+            session,
+            person_id=person.person_id,
+            cutoff=cutoff,
         )
         await dao.upsert(
             person_id=person.person_id,
@@ -72,7 +75,10 @@ async def recompute_workload(
 
 
 async def _aggregate_for_person(
-    session: AsyncSession, *, person_id: uuid.UUID, cutoff: datetime | None,
+    session: AsyncSession,
+    *,
+    person_id: uuid.UUID,
+    cutoff: datetime | None,
 ) -> dict[str, Any]:
     """对单个 person 聚合 open / in_progress / done 计数与 estimate 小时数。
 
@@ -89,8 +95,7 @@ async def _aggregate_for_person(
     result = await session.execute(stmt)
     rows = result.all()
 
-    out = {"open": 0, "in_progress": 0, "completed": 0,
-           "est_remaining": 0.0, "est_completed": 0.0}
+    out = {"open": 0, "in_progress": 0, "completed": 0, "est_remaining": 0.0, "est_completed": 0.0}
     for status, est in rows:
         est_val = float(est) if est is not None else 0.0
         s = (status or "").lower()

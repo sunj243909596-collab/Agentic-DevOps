@@ -13,6 +13,7 @@ A1 假设字段集：
 - issue_assignment: issue_id, user_id, role, weight
 - user: id, username, display_name, email, status
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

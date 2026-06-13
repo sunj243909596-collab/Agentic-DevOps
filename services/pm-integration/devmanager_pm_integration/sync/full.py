@@ -3,6 +3,7 @@
 每日 02:00 触发（CRON 配置在 P9 / arq worker 处）。
 覆盖：iterations / issues / assignments / users。
 """
+
 from __future__ import annotations
 
 import logging
@@ -70,7 +71,10 @@ async def run_full_sync(
         # assignments：通过 issue 列表逐 issue 拉（v1 简化：拉全部，PM 平台可能也提供 list_all）
         assignments = await client.get_paginated("/issue_assignments")
         n, missing = await upsert_assignments_batch(
-            assignment_dao, issue_dao, pm_identity_dao, assignments,
+            assignment_dao,
+            issue_dao,
+            pm_identity_dao,
+            assignments,
         )
         stats["assignments"] = n
         missing_all.extend(missing)

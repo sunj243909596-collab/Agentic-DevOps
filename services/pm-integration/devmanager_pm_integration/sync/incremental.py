@@ -2,6 +2,7 @@
 
 每 1 小时触发：按 PM 平台 `updated_at` 拉取增量，按 pm_sync_cursor 记录水位线。
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,7 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 async def _cursor_or_default(
-    cursor_dao: PmSyncCursorDAO, source_key: str,
+    cursor_dao: PmSyncCursorDAO,
+    source_key: str,
 ) -> str | None:
     row = await cursor_dao.get(source_key)
     if row is None:
@@ -88,7 +90,10 @@ async def run_incremental_sync(
         params = {"updated_after": cur} if cur else {}
         items = await client.get_paginated("/issue_assignments", params=params)
         n, missing = await upsert_assignments_batch(
-            assignment_dao, issue_dao, pm_identity_dao, items,
+            assignment_dao,
+            issue_dao,
+            pm_identity_dao,
+            items,
         )
         stats["assignments"] = n
         missing_all.extend(missing)

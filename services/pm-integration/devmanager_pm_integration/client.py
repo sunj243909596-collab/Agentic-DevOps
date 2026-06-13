@@ -7,6 +7,7 @@
 - **可测**：客户端可注入 `httpx.MockTransport` 用于测试
 - **不可恢复错误 → 抛 `PMClientError` 子类**，不静默吞掉
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,6 +53,7 @@ def _default_client_factory(
     config: PMIntegrationConfig,
 ) -> Callable[[], Awaitable[httpx.AsyncClient]]:
     """默认工厂：构造标准 httpx.AsyncClient（带认证头）。"""
+
     async def _factory() -> httpx.AsyncClient:
         return httpx.AsyncClient(
             base_url=config.base_url,
@@ -62,6 +64,7 @@ def _default_client_factory(
                 "User-Agent": "DevManager-Agent/pm-integration/0.1",
             },
         )
+
     return _factory
 
 
@@ -94,14 +97,20 @@ class PMClient:
     # ── 公共方法 ───────────────────────────────────────────────────────────
 
     async def get_json(
-        self, path: str, *, params: dict[str, Any] | None = None,
+        self,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """GET → JSON dict。"""
         response = await self._request("GET", path, params=params)
         return self._parse_json(response)
 
     async def get_paginated(
-        self, path: str, *, params: dict[str, Any] | None = None,
+        self,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         """GET 翻页：cursor 优先，失败回退 offset 翻页。返回所有 items 列表。
 
@@ -130,8 +139,7 @@ class PMClient:
             page_items = payload.get("items", [])
             if not isinstance(page_items, list):
                 raise PMClientError(
-                    f"PM API {path}: expected 'items' to be list, got "
-                    f"{type(page_items).__name__}"
+                    f"PM API {path}: expected 'items' to be list, got {type(page_items).__name__}"
                 )
             items.extend(page_items)
 
@@ -150,7 +158,11 @@ class PMClient:
     # ── 内部 ───────────────────────────────────────────────────────────────
 
     async def _request(
-        self, method: str, path: str, *, params: dict[str, Any] | None = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
     ) -> httpx.Response:
         if self._client is None:
             raise PMClientError("PMClient must be used via 'async with'")
@@ -163,23 +175,22 @@ class PMClient:
         for attempt in range(self._max_retries + 1):
             try:
                 response = await self._client.request(
-                    method, url, params=params,
+                    method,
+                    url,
+                    params=params,
                 )
             except httpx.TimeoutException as exc:
                 last_exc = exc
                 if attempt == self._max_retries:
                     raise PMClientError(
-                        f"PM API {method} {url} timed out after "
-                        f"{self._max_retries + 1} attempts"
+                        f"PM API {method} {url} timed out after {self._max_retries + 1} attempts"
                     ) from exc
                 await self._sleep(attempt, retry_after=None)
                 continue
             except httpx.TransportError as exc:
                 last_exc = exc
                 if attempt == self._max_retries:
-                    raise PMClientError(
-                        f"PM API {method} {url} transport error: {exc}"
-                    ) from exc
+                    raise PMClientError(f"PM API {method} {url} transport error: {exc}") from exc
                 await self._sleep(attempt, retry_after=None)
                 continue
 
@@ -187,56 +198,43 @@ class PMClient:
             if 200 <= status < 300:
                 return response
             if status in (401, 403):
-                raise PMAuthError(
-                    f"PM API {method} {url} auth failed ({status})"
-                )
+                raise PMAuthError(f"PM API {method} {url} auth failed ({status})")
             if status == 404:
-                raise PMNotFoundError(
-                    f"PM API {method} {url} not found"
-                )
+                raise PMNotFoundError(f"PM API {method} {url} not found")
             if status == 429:
                 retry_after = self._parse_retry_after(response)
                 if attempt < self._max_retries:
                     await self._sleep(attempt, retry_after=retry_after)
                     continue
                 raise PMRateLimitedError(
-                    f"PM API {method} {url} rate limited after "
-                    f"{self._max_retries + 1} attempts"
+                    f"PM API {method} {url} rate limited after {self._max_retries + 1} attempts"
                 )
             if 500 <= status < 600:
                 if attempt < self._max_retries:
                     logger.warning(
                         "PM API %s %s returned %d, retrying (attempt %d)",
-                        method, url, status, attempt + 1,
+                        method,
+                        url,
+                        status,
+                        attempt + 1,
                     )
                     await self._sleep(attempt, retry_after=None)
                     continue
-                raise PMServerError(
-                    f"PM API {method} {url} server error {status}"
-                )
+                raise PMServerError(f"PM API {method} {url} server error {status}")
             # 其他 4xx（422/400 等）不重试
-            raise PMClientError(
-                f"PM API {method} {url} returned {status}: "
-                f"{response.text[:200]}"
-            )
+            raise PMClientError(f"PM API {method} {url} returned {status}: {response.text[:200]}")
 
         # 不应到达；保险起见
-        raise PMClientError(
-            f"PM API {method} {url} failed: {last_exc}"
-        )
+        raise PMClientError(f"PM API {method} {url} failed: {last_exc}")
 
     @staticmethod
     def _parse_json(response: httpx.Response) -> dict[str, Any]:
         try:
             data = response.json()
         except Exception as exc:
-            raise PMClientError(
-                f"PM API returned non-JSON: {response.text[:200]}"
-            ) from exc
+            raise PMClientError(f"PM API returned non-JSON: {response.text[:200]}") from exc
         if not isinstance(data, dict):
-            raise PMClientError(
-                f"PM API expected JSON object, got {type(data).__name__}"
-            )
+            raise PMClientError(f"PM API expected JSON object, got {type(data).__name__}")
         return data
 
     @staticmethod
@@ -253,6 +251,6 @@ class PMClient:
         if retry_after is not None and retry_after > 0:
             await asyncio.sleep(retry_after)
             return
-        backoff = self._base_backoff * (2 ** attempt)
+        backoff = self._base_backoff * (2**attempt)
         jitter = random.uniform(0, self._base_backoff)
         await asyncio.sleep(backoff + jitter)

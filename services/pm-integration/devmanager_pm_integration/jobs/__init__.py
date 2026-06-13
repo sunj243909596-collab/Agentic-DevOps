@@ -3,6 +3,7 @@
 供 apps/worker 或外部 cron 调用。worker 自己维护 connection pool，
 本模块只提供任务函数（无状态）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,5 +42,7 @@ async def pm_incremental_sync_job(ctx: dict[str, Any]) -> dict[str, Any]:
     async with session_factory() as session:
         async with PMClient(cfg) as client:
             return await run_incremental_sync(
-                session, client, actor="arq.pm_incremental_sync",
+                session,
+                client,
+                actor="arq.pm_incremental_sync",
             )

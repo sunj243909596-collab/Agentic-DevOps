@@ -3,6 +3,7 @@
 把 `integration.sync` / `integration.identity_changed` 等事件类型
 封装成薄函数，调用方只传业务字段，DAO 的元数据/时间戳规则由本模块统一处理。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -20,8 +21,8 @@ async def record_sync(
     audit_dao: AuditEventDAO,
     *,
     actor: str,
-    sync_type: str,           # 'full' | 'incremental'
-    source: str,              # 'pm' | 'gitlab' | 'reconciliation'
+    sync_type: str,  # 'full' | 'incremental'
+    source: str,  # 'pm' | 'gitlab' | 'reconciliation'
     records_processed: int,
     duration_ms: int,
     success: bool,
@@ -56,8 +57,8 @@ async def record_identity_change(
     *,
     actor: str,
     person_id: uuid.UUID,
-    action: str,              # 'map' | 'unmap'
-    identity_kind: str,       # 'gitlab' | 'pm'
+    action: str,  # 'map' | 'unmap'
+    identity_kind: str,  # 'gitlab' | 'pm'
     identity_value: str,
 ) -> None:
     """记录身份映射变更（CLI / 手动）。"""

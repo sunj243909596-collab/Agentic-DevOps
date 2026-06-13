@@ -2,6 +2,7 @@
 
 用于本地快速验证 P0 骨架。
 """
+
 from __future__ import annotations
 
 from devmanager_pm_integration.config import load_config

@@ -4,6 +4,7 @@
 
 启用方法：设置环境变量 `PM_WEBHOOK_ENABLED=true`。
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 def is_webhook_enabled() -> bool:
     """检查 webhook 是否启用。v1 默认 False。"""
     from devmanager_pm_integration.config import load_config
+
     try:
         return load_config().webhook_enabled
     except RuntimeError:

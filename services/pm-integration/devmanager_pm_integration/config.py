@@ -5,6 +5,7 @@
 - 末尾斜杠统一去除（避免 PM_API_BASE_URL/a + PM_API_BASE_URL/a/ 出现双形态）
 - token 永远只来自 env，绝不写入日志
 """
+
 from __future__ import annotations
 
 import os
@@ -26,9 +27,7 @@ def _read_int(name: str, default: int) -> int:
     try:
         return int(raw.strip())
     except ValueError as exc:
-        raise RuntimeError(
-            f"Env var {name}={raw!r} is not a valid integer"
-        ) from exc
+        raise RuntimeError(f"Env var {name}={raw!r} is not a valid integer") from exc
 
 
 def _read_bool(name: str, default: bool) -> bool:
@@ -80,9 +79,7 @@ def load_config() -> PMIntegrationConfig:
 
     timeout_seconds = _read_int("PM_API_TIMEOUT_SECONDS", default=30)
     if timeout_seconds <= 0:
-        raise RuntimeError(
-            f"PM_API_TIMEOUT_SECONDS must be positive, got {timeout_seconds}"
-        )
+        raise RuntimeError(f"PM_API_TIMEOUT_SECONDS must be positive, got {timeout_seconds}")
 
     page_size = _read_int("PM_API_PAGE_SIZE", default=100)
     if page_size <= 0:

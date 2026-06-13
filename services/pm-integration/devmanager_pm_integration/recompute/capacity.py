@@ -3,6 +3,7 @@
 数据源：iteration (P2) + issue_assignment × issue.estimate_hours。
 逻辑：对 (person, iteration) 计算 estimated_hours；load_ratio = est / (weekly × weeks)。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -48,7 +49,9 @@ async def recompute_capacity(
         weeks = _weeks_between(it.start_date, it.end_date)
         for person in persons:
             estimated = await _estimated_hours_for(
-                session, person_id=person.person_id, iteration_id=it.iteration_id,
+                session,
+                person_id=person.person_id,
+                iteration_id=it.iteration_id,
             )
             await dao.upsert(
                 person_id=person.person_id,
@@ -68,7 +71,10 @@ async def recompute_capacity(
 
 
 async def _estimated_hours_for(
-    session: AsyncSession, *, person_id: uuid.UUID, iteration_id: uuid.UUID,
+    session: AsyncSession,
+    *,
+    person_id: uuid.UUID,
+    iteration_id: uuid.UUID,
 ) -> float:
     """单个 person 在某个 iteration 内被分配 issue 的 estimate_hours 之和。"""
     result = await session.execute(

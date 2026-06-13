@@ -7,6 +7,7 @@ v2: 用 LLM 标注代码领域（path: / repo: 维度）。
 注意：change_units.owner 是 GitLab username（str），与 Person.display_name 模糊匹配。
 v2 应改用 gitlab_identity.gitlab_username 严格匹配。
 """
+
 from __future__ import annotations
 
 import uuid

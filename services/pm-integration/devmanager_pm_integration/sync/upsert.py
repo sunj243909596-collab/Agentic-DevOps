@@ -6,6 +6,7 @@
 - 缺字段（DTO optional）走 ORM 默认值（None / 0.0 / 空 list）
 - 解析失败的字段记入 audit metadata.missing_fields
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -72,7 +73,8 @@ async def upsert_issue(
 ) -> tuple[Issue, UpsertResult]:
     """Upsert 一个 issue。两阶段：先反查 iteration_id。"""
     missing = _detect_missing(
-        payload, ("id", "key", "title", "type", "priority", "status"),
+        payload,
+        ("id", "key", "title", "type", "priority", "status"),
     )
     dto = IssueDTO.model_validate(payload)
     fields = filter_known_fields(issue_to_orm_fields(dto), entity="issue")
@@ -106,7 +108,8 @@ async def upsert_assignment(
     missing = _detect_missing(payload, ("issue_id", "user_id", "role"))
     dto = IssueAssignmentDTO.model_validate(payload)
     fields = filter_known_fields(
-        issue_assignment_to_orm_fields(dto), entity="issue_assignment",
+        issue_assignment_to_orm_fields(dto),
+        entity="issue_assignment",
     )
 
     # 两阶段：issue
@@ -145,7 +148,8 @@ async def upsert_user_mirror(
     # Person 创建由 identity CLI 负责（governance 流程）。sync 仅触发 audit。
     # 此处不直接写 PmIdentity 表，CLI 触发后再写。
     return None, UpsertResult(
-        succeeded=0, missing_fields=_detect_missing(payload, ("id", "username")),
+        succeeded=0,
+        missing_fields=_detect_missing(payload, ("id", "username")),
     )
 
 
@@ -197,7 +201,10 @@ async def upsert_assignments_batch(
     for payload in payloads:
         try:
             _, result = await upsert_assignment(
-                assignment_dao, issue_dao, pm_identity_dao, payload,
+                assignment_dao,
+                issue_dao,
+                pm_identity_dao,
+                payload,
             )
             succeeded += result.succeeded
             missing_all.extend(result.missing_fields)

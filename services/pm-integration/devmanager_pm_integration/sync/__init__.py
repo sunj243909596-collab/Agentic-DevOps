@@ -1,4 +1,5 @@
 """S4 P3 — 同步层公共入口。"""
+
 from __future__ import annotations
 
 from devmanager_pm_integration.sync.full import run_full_sync

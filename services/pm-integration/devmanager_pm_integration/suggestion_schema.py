@@ -8,6 +8,7 @@
 - `SuggestionPayload` Pydantic 模型（程序入口）
 - `validate_payload()`：抛出 `ValueError` 当文案越界
 """
+
 from __future__ import annotations
 
 import re
@@ -127,6 +128,10 @@ SUGGESTION_SCHEMA: dict[str, Any] = {
         "generated_at": {"type": "string", "format": "date-time"},
     },
     "required": [
-        "target_type", "target_id", "suggestion_type", "payload", "source_refs",
+        "target_type",
+        "target_id",
+        "suggestion_type",
+        "payload",
+        "source_refs",
     ],
 }
