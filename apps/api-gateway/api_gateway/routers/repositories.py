@@ -46,6 +46,18 @@ def clone_or_fetch_sync(clone_url: str, repo_dir: Path, access_token: str | None
     asyncio.run(clone_or_fetch(clone_url, repo_dir, access_token))
 
 
+_REPO_SYNC_LOCKS: dict[uuid.UUID, asyncio.Lock] = {}
+
+
+async def _get_sync_lock(repository_id: uuid.UUID) -> asyncio.Lock:
+    """Per-process lock to prevent concurrent sync on the same repository."""
+    lock = _REPO_SYNC_LOCKS.get(repository_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        _REPO_SYNC_LOCKS[repository_id] = lock
+    return lock
+
+
 class UpdateRepositoryIn(BaseModel):
     clone_url: str | None = Field(default=None, description="HTTPS clone URL")
     clear_clone_url: bool = False
@@ -243,16 +255,23 @@ async def sync_repository(
             detail="clone_url 必须以 https:// 开头，请先在编辑仓库中配置",
         )
 
+    lock = await _get_sync_lock(repository_id)
+    if lock.locked():
+        raise HTTPException(
+            status_code=409, detail="Repository sync already in progress"
+        )
+
     workspace = await SettingDAO(db).get_value("git_workspace", "/tmp/devmanager/repos")
     repo_dir = Path(workspace) / str(repository_id)
 
     started = time.monotonic()
-    try:
-        await asyncio.to_thread(
-            clone_or_fetch_sync, repo.clone_url, repo_dir, repo.access_token
-        )
-    except GitError as e:
-        detail = _truncate_stderr(f"git sync failed: {e}")
-        raise HTTPException(status_code=502, detail=detail)
+    async with lock:
+        try:
+            await asyncio.to_thread(
+                clone_or_fetch_sync, repo.clone_url, repo_dir, repo.access_token
+            )
+        except GitError as e:
+            detail = _truncate_stderr(f"git sync failed: {e}")
+            raise HTTPException(status_code=502, detail=detail)
     elapsed = round(time.monotonic() - started, 2)
     return {"ok": True, "elapsed_sec": elapsed}

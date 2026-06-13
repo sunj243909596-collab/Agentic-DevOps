@@ -308,3 +308,81 @@ async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
         assert len(message) < 12_000  # 8KB + overhead
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_sync_repository_409_on_concurrent_same_repo(monkeypatch):
+    """A second sync on the same repository while first is in progress → 409."""
+    import asyncio as _asyncio
+    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
+
+    db = MagicMock()
+    db.bind = MagicMock()
+    db.bind.dialect.name = "sqlite"
+
+    fake_repo = MagicMock()
+    fake_repo.repository_id = REPO_ID
+    fake_repo.clone_url = "https://gitlab.example.com/org/repo.git"
+    fake_repo.access_token = None
+
+    class _RepoDAOOk:
+        def __init__(self, _db): pass
+        async def get_by_id(self, repository_id): return fake_repo
+
+    class _SettingDAOOk:
+        def __init__(self, _db): pass
+        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
+    )
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
+    )
+
+    started = _asyncio.Event()
+    release = _asyncio.Event()
+    main_loop = _asyncio.get_running_loop()
+
+    async def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Reset module-level lock dict between tests
+    import api_gateway.routers.repositories as repo_mod
+    repo_mod._REPO_SYNC_LOCKS.clear()
+    try:
+        def slow_sync(clone_url, repo_dir, access_token=None):
+            # Block the worker thread until the test releases the event.
+            # asyncio.Event.wait() must be driven by the event loop, so we
+            # schedule its coroutine on the main loop and block the thread.
+            started.set()
+            fut = _asyncio.run_coroutine_threadsafe(release.wait(), main_loop)
+            fut.result(timeout=5)
+            return None
+
+        monkeypatch.setattr(
+            "api_gateway.routers.repositories.clone_or_fetch_sync",
+            slow_sync,
+        )
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            # Launch first sync (background, will block)
+            task1 = _asyncio.create_task(ac.post(f"/v1/repositories/{REPO_ID}/sync"))
+            # Wait for the first to enter the lock
+            await _asyncio.wait_for(started.wait(), timeout=2)
+
+            # Second sync should be rejected
+            r2 = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
+            assert r2.status_code == 409
+            assert "in progress" in r2.json()["message"].lower()
+
+            # Release first; it should succeed
+            release.set()
+            r1 = await task1
+            assert r1.status_code == 200
+    finally:
+        app.dependency_overrides.clear()
+        repo_mod._REPO_SYNC_LOCKS.clear()
