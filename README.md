@@ -15,21 +15,21 @@ The system is read-only by default. It is designed to support engineering manage
 
 ## Repository Layout
 
-- `apps/`: API gateway, worker, web UI, and application entry points.
-- `services/`: domain services such as PM integration, Git ingestion, change intelligence, finding aggregation, scoring, and audit.
+- `apps/`: API gateway, web UI, worker, orchestrator, report-service, and application entry points.
+- `services/`: domain services such as PM (requirements platform) integration.
 - `packages/`: shared Python, TypeScript, Java, database, Git, LLM, scoring, reporting, and contract modules.
-- `migrations/postgres/`: PostgreSQL SQL migration scripts that must be versioned and uploaded with the code.
+- `migrations/postgres/`: PostgreSQL SQL migration scripts that are versioned and uploaded with the code.
 - `scripts/`: local development, migration, and operational scripts.
 - `.github/`: CI workflow configuration.
 
-Product design documents, tests, runtime logs, local caches, virtual environments, and frontend build artifacts are intentionally excluded from version control.
+Product design documents, runtime logs, local caches, virtual environments, and frontend build artifacts are intentionally excluded from version control. Pytest test suites (under `apps/`, `packages/`, `services/`, and top-level `tests/`) are tracked in version control.
 
 ## Technology Stack
 
 - Python 3.12 with `uv` workspace management.
 - FastAPI for the API gateway.
 - ARQ and Redis for background jobs.
-- PostgreSQL 14+ for persistent storage.
+- PostgreSQL 16 for persistent storage.
 - React, TypeScript, and Vite for the web UI.
 - Docker Compose for local PostgreSQL and Redis services.
 
@@ -57,6 +57,16 @@ The current migration set includes:
 - `011_team_ops_suggestion.sql`
 - `012_pm_sync_cursor.sql`
 - `013_team_ops_knowledge.sql`
+
+## Testing
+
+Run the full test suite (unit + integration):
+
+```bash
+uv run pytest
+```
+
+`make test` and the CI `test` job both delegate to the same command. Tests are collected from `apps/`, `packages/`, `services/`, and top-level `tests/` (see `[tool.pytest.ini_options].testpaths` in `pyproject.toml`). Integration tests under `tests/integration/` require a live PostgreSQL — the CI workflow applies migrations via `scripts/migrate.py` before running pytest.
 
 ## Local Development
 
