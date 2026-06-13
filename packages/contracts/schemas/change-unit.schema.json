@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/change-unit.schema.json",
+  "title": "ChangeUnit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "change_unit_id",
+    "run_id",
+    "repository",
+    "baseline_sha",
+    "target_sha",
+    "file_path",
+    "change_type",
+    "language",
+    "added_lines",
+    "deleted_lines",
+    "risk_tags"
+  ],
+  "properties": {
+    "change_unit_id": { "type": "string", "format": "uuid" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "baseline_sha": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "target_sha": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "file_path": { "type": "string", "minLength": 1 },
+    "previous_file_path": { "type": ["string", "null"] },
+    "change_type": { "type": "string", "enum": ["added", "modified", "deleted", "renamed", "copied", "type_changed"] },
+    "language": { "type": "string", "minLength": 1 },
+    "owner": { "type": ["string", "null"] },
+    "added_lines": { "type": "integer", "minimum": 0 },
+    "deleted_lines": { "type": "integer", "minimum": 0 },
+    "is_binary": { "type": "boolean", "default": false },
+    "is_generated": { "type": "boolean", "default": false },
+    "is_vendor": { "type": "boolean", "default": false },
+    "is_test_file": { "type": "boolean", "default": false },
+    "risk_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "authentication",
+          "authorization",
+          "public-api",
+          "data-migration",
+          "schema-change",
+          "transaction",
+          "concurrency",
+          "dependency",
+          "infrastructure",
+          "deployment",
+          "missing-tests",
+          "high-complexity",
+          "incident-related"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "hunks_ref": { "type": ["string", "null"] }
+  }
+}

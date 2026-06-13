@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/audit-event.schema.json",
+  "title": "AuditEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "actor", "workflow_id", "event_type", "timestamp"],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "actor": { "type": "string", "minLength": 1 },
+    "workflow_id": { "type": "string", "format": "uuid" },
+    "event_type": {
+      "type": "string",
+      "enum": ["workflow.transition", "tool.invocation", "model.invocation", "policy.decision", "approval.decision", "report.generated"]
+    },
+    "tool": { "type": ["string", "null"] },
+    "input_ref": { "type": ["string", "null"] },
+    "output_ref": { "type": ["string", "null"] },
+    "model_version": { "type": ["string", "null"] },
+    "prompt_version": { "type": ["string", "null"] },
+    "policy_version": { "type": ["string", "null"] },
+    "policy_decision": { "type": ["string", "null"], "enum": ["allowed", "denied", "approval_required", null] },
+    "approval_identity": { "type": ["string", "null"] },
+    "metadata": { "type": "object", "additionalProperties": true, "default": {} },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

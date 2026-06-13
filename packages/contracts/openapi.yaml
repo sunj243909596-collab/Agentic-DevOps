@@ -1,0 +1,352 @@
+openapi: 3.1.0
+info:
+  title: DevManager-Agent MVP API
+  version: 0.1.0
+  description: Read-only analysis, finding, scoring, report, and audit APIs for DevManager-Agent MVP.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+  /v1/trigger-events:
+    post:
+      summary: Submit a normalized trigger event
+      operationId: createTriggerEvent
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerEvent'
+      responses:
+        '202':
+          description: Trigger accepted and analysis run queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [run_id]
+                properties:
+                  run_id:
+                    type: string
+                    format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/analysis-runs:
+    post:
+      summary: Create a manual analysis run
+      operationId: createAnalysisRun
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [repository, target_branch]
+              properties:
+                repository:
+                  type: string
+                  pattern: '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
+                target_branch:
+                  type: string
+                target_sha:
+                  type: string
+                  nullable: true
+      responses:
+        '202':
+          description: Analysis run queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /v1/analysis-runs/{run_id}:
+    get:
+      summary: Get analysis run status and metadata
+      operationId: getAnalysisRun
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Analysis run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisRun'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/analysis-runs/{run_id}/change-units:
+    get:
+      summary: List normalized change units for an analysis run
+      operationId: listChangeUnits
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Change units
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChangeUnit'
+  /v1/analysis-runs/{run_id}/findings:
+    get:
+      summary: List findings for an analysis run
+      operationId: listFindings
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low, informational]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, accepted, rejected, disputed, resolved]
+      responses:
+        '200':
+          description: Findings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewerFinding'
+  /v1/findings/{finding_id}/status:
+    patch:
+      summary: Accept, reject, dispute, or resolve a finding
+      operationId: updateFindingStatus
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, reason]
+              properties:
+                status:
+                  type: string
+                  enum: [accepted, rejected, disputed, resolved]
+                reason:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Updated finding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewerFinding'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/analysis-runs/{run_id}/score:
+    get:
+      summary: Get deterministic score for an analysis run
+      operationId: getScore
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Score'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/analysis-runs/{run_id}/report:
+    get:
+      summary: Get generated report metadata and content reference
+      operationId: getReport
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Report metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report_id, run_id, status, content_reference]
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+                  run_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [generated, unavailable]
+                  content_reference:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/audit-events:
+    get:
+      summary: Query audit events
+      operationId: listAuditEvents
+      parameters:
+        - name: workflow_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: event_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEvent'
+  /v1/publication-requests:
+    post:
+      summary: Request controlled report publication
+      operationId: createPublicationRequest
+      description: MVP policy rejects external write channels unless explicitly enabled.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportPublicationRequest'
+      responses:
+        '202':
+          description: Publication request accepted or queued for approval
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [request_id, policy_decision]
+                properties:
+                  request_id:
+                    type: string
+                    format: uuid
+                  policy_decision:
+                    type: string
+                    enum: [allowed, denied, approval_required]
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Duplicate or conflicting request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    AnalysisRun:
+      $ref: './schemas/analysis-run.schema.json'
+    TriggerEvent:
+      $ref: './schemas/trigger-event.schema.json'
+    ChangeUnit:
+      $ref: './schemas/change-unit.schema.json'
+    ReviewerFinding:
+      $ref: './schemas/reviewer-finding.schema.json'
+    Score:
+      $ref: './schemas/score.schema.json'
+    AuditEvent:
+      $ref: './schemas/audit-event.schema.json'
+    ReportPublicationRequest:
+      $ref: './schemas/report-publication-request.schema.json'
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        correlation_id:
+          type: string
+          format: uuid

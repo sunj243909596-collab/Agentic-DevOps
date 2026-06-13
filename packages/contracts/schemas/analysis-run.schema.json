@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/analysis-run.schema.json",
+  "title": "AnalysisRun",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "repository_id",
+    "trigger_type",
+    "target_branch",
+    "baseline_sha",
+    "target_sha",
+    "status",
+    "policy_version",
+    "scoring_version",
+    "started_at"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "format": "uuid" },
+    "repository_id": { "type": "string", "format": "uuid" },
+    "trigger_id": { "type": "string", "format": "uuid" },
+    "trigger_type": {
+      "type": "string",
+      "enum": ["scheduled.daily", "manual", "git.push", "pull_request", "ci.completed", "observability.alert"]
+    },
+    "target_branch": { "type": "string", "minLength": 1 },
+    "baseline_sha": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "target_sha": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "merge_base_sha": { "type": ["string", "null"], "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "history_rewrite_detected": { "type": "boolean", "default": false },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trigger_received",
+        "authorized",
+        "baseline_resolved",
+        "repository_fetched",
+        "diff_extracted",
+        "data_sanitized",
+        "change_classified",
+        "reviews_dispatched",
+        "findings_aggregated",
+        "findings_validated",
+        "score_calculated",
+        "policy_evaluated",
+        "report_generated",
+        "baseline_committed",
+        "completed",
+        "partial_analysis",
+        "failed",
+        "rejected"
+      ]
+    },
+    "policy_version": { "type": "string", "minLength": 1 },
+    "scoring_version": { "type": "string", "minLength": 1 },
+    "agent_versions": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} },
+    "failure_reason": { "type": ["string", "null"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

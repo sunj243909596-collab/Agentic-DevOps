@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# scripts/git-hooks/post-merge
+# 复制到 .git/hooks/post-merge 后启用:
+#   cp scripts/git-hooks/post-merge .git/hooks/post-merge
+#   chmod +x .git/hooks/post-merge
+set -euo pipefail
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+PREV_HEAD="HEAD@{1}"
+NEW_HEAD="HEAD"
+
+uv run python -m api_gateway.routers.code_map.regen \
+    --prev-head "$(git rev-parse "$PREV_HEAD" 2>/dev/null || echo 0)" \
+    --new-head "$(git rev-parse "$NEW_HEAD")" \
+    --maps-dir "$REPO_ROOT/docs/code-map" || true

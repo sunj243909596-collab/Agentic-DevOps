@@ -1,0 +1,96 @@
+# ── Python virtual environment ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Python build / cache artifacts ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ── Tool caches ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.pyright_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+.idea/
+.vscode/
+.superpowers/
+.claude/settings.local.json
+*.swp
+*.swo
+*~
+
+# ── Runtime artifacts (start.sh writes here) ────────────────────────────────
+.logs/
+.pids/
+*.pid
+*.log
+
+# ── OS junk ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor temp ─────────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# ── Local environment overrides ─────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep .env.example as the template
+!.env.example
+
+# ── Prototype / scratch (kept for archival, but ignored) ────────────────────
+prototype/
+agents/
+evals/
+
+# ── Product / development design documents ──────────────────────────────────
+docs/
+
+# ── Tests (not uploaded) ────────────────────────────────────────────────────
+tests/
+**/tests/
+**/__tests__/
+*.test.*
+*.spec.*
+apps/web/src/test-setup.ts
+apps/web/vitest.config.ts
+
+# ── Node.js (apps/web has its own frontend workspace) ───────────────────────
+apps/web/node_modules/
+apps/web/.vite/
+apps/web/dist/
+
+# ── Migrations / DB local data ──────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3

@@ -1,0 +1,17 @@
+[project]
+name = "devmanager-reporting"
+version = "0.1.0"
+description = "Markdown report generation for DevManager"
+requires-python = ">=3.12"
+dependencies = [
+    "devmanager-domain",
+    "devmanager-db",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+devmanager-domain = { workspace = true }
+devmanager-db = { workspace = true }

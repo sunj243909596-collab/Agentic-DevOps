@@ -1,0 +1,17 @@
+[project]
+name = "devmanager-scoring"
+version = "0.1.0"
+description = "Deterministic scoring engine for DevManager"
+requires-python = ">=3.12"
+dependencies = [
+    "devmanager-domain",
+    "devmanager-db",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+devmanager-domain = { workspace = true }
+devmanager-db = { workspace = true }

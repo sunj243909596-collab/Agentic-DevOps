@@ -1,0 +1,40 @@
+[project]
+name = "devmanager-worker"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "arq>=0.25",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.29",
+    "python-dotenv>=1.0",
+    "devmanager-domain",
+    "devmanager-db",
+    "devmanager-git",
+    "devmanager-agents",
+    "devmanager-scoring",
+    "devmanager-reporting",
+    "devmanager-llm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[tool.uv.sources]
+devmanager-domain = { workspace = true }
+devmanager-db = { workspace = true }
+devmanager-git = { workspace = true }
+devmanager-agents = { workspace = true }
+devmanager-scoring = { workspace = true }
+devmanager-reporting = { workspace = true }
+devmanager-llm = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["worker"]

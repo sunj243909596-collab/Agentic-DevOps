@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate contracts and domain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pyyaml for contract validation
+        run: pip install pyyaml
+
+      - name: Validate contracts
+        run: make validate-contracts
+
+      - name: Validate domain models
+        run: make validate-domain
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format check
+        run: uv run ruff format --check .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: devmanager
+          POSTGRES_USER: devmanager
+          POSTGRES_PASSWORD: devmanager
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devmanager -d devmanager"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run tests
+        run: uv run pytest
+        env:
+          DATABASE_URL: postgresql+asyncpg://devmanager:devmanager@localhost:5432/devmanager
+          APP_ENV: test
+          APP_VERSION: "0.1.0"

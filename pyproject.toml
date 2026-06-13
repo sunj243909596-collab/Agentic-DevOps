@@ -1,0 +1,29 @@
+[tool.uv.workspace]
+members = [
+    "apps/api-gateway",
+    "apps/worker",
+    "packages/domain/python",
+    "packages/db",
+    "packages/git",
+    "packages/agents",
+    "packages/scoring",
+    "packages/reporting",
+    "packages/llm",
+    "services/pm-integration",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["apps", "packages", "tests"]
+addopts = "-v --import-mode=importlib"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true

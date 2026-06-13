@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/review-task.schema.json",
+  "title": "ReviewTask",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "run_id", "category", "change_unit_ids", "constraints"],
+  "properties": {
+    "task_id": { "type": "string", "format": "uuid" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "category": {
+      "type": "string",
+      "enum": ["correctness", "security", "testing", "reliability", "architecture", "maintainability", "performance", "infrastructure", "kb_compliance"]
+    },
+    "change_unit_ids": { "type": "array", "items": { "type": "string", "format": "uuid" }, "minItems": 1 },
+    "tool_evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "knowledge_context_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_findings", "require_line_evidence", "external_actions_allowed"],
+      "properties": {
+        "max_findings": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "require_line_evidence": { "type": "boolean" },
+        "external_actions_allowed": { "type": "boolean", "const": false }
+      }
+    }
+  }
+}

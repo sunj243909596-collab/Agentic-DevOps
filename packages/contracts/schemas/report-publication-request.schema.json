@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/report-publication-request.schema.json",
+  "title": "ReportPublicationRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "report_id", "channel", "destination", "approval_required", "content_reference", "policy_version"],
+  "properties": {
+    "request_id": { "type": "string", "format": "uuid" },
+    "report_id": { "type": "string", "format": "uuid" },
+    "channel": { "type": "string", "enum": ["internal_markdown", "pull_request_comment", "issue", "slack", "feishu", "dashboard"] },
+    "destination": { "type": "string", "minLength": 1 },
+    "approval_required": { "type": "boolean" },
+    "content_reference": { "type": "string", "minLength": 1 },
+    "policy_version": { "type": "string", "minLength": 1 }
+  }
+}

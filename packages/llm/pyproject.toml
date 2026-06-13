@@ -1,0 +1,10 @@
+[project]
+name = "devmanager-llm"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+]
+
+[tool.uv]
+package = true

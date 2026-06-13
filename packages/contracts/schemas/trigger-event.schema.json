@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/trigger-event.schema.json",
+  "title": "TriggerEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "source", "timestamp", "repository", "target_branch", "correlation_id"],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": {
+      "type": "string",
+      "enum": ["scheduled.daily", "manual", "git.push", "pull_request", "ci.completed", "observability.alert"]
+    },
+    "source": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "target_branch": { "type": "string", "minLength": 1 },
+    "target_sha": { "type": ["string", "null"], "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "actor": { "type": ["string", "null"] },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "payload_reference": { "type": ["string", "null"] }
+  }
+}

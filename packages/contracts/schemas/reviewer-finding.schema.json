@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmanager-agent.local/schemas/reviewer-finding.schema.json",
+  "title": "ReviewerFinding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "run_id",
+    "category",
+    "severity",
+    "confidence",
+    "repository",
+    "commit_sha",
+    "file",
+    "start_line",
+    "end_line",
+    "observation",
+    "impact",
+    "recommendation",
+    "verification",
+    "evidence_refs",
+    "status"
+  ],
+  "properties": {
+    "finding_id": { "type": "string", "pattern": "^F-[0-9]{8}-[0-9]{3,}$" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "category": {
+      "type": "string",
+      "enum": ["correctness", "security", "testing", "reliability", "architecture", "maintainability", "performance", "infrastructure", "kb_compliance"]
+    },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "informational"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "commit_sha": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+    "file": { "type": "string", "minLength": 1 },
+    "start_line": { "type": "integer", "minimum": 1 },
+    "end_line": { "type": "integer", "minimum": 1 },
+    "observation": { "type": "string", "minLength": 1 },
+    "impact": { "type": "string", "minLength": 1 },
+    "recommendation": { "type": "string", "minLength": 1 },
+    "verification": { "type": "string", "minLength": 1 },
+    "evidence_refs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "related_knowledge_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "status": { "type": "string", "enum": ["open", "accepted", "rejected", "disputed", "resolved"] },
+    "dedupe_key": { "type": ["string", "null"] }
+  }
+}
