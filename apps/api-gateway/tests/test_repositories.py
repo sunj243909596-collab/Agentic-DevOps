@@ -127,3 +127,184 @@ async def test_sync_repository_success(monkeypatch):
         assert "elapsed_sec" in data
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_sync_repository_404_when_not_found(monkeypatch):
+    """POST /sync on a non-existent repository returns 404."""
+    from api_gateway.routers.repositories import RepositoryDAO
+
+    db = MagicMock()
+    db.bind = MagicMock()
+    db.bind.dialect.name = "sqlite"
+
+    class _RepoDAOMissing:
+        def __init__(self, _db): pass
+        async def get_by_id(self, repository_id): return None
+
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOMissing
+    )
+
+    async def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
+        assert r.status_code == 404
+        body = r.json()
+        assert body["error_code"] == "NOT_FOUND"
+        assert "not found" in body["message"].lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_sync_repository_422_when_clone_url_not_https(monkeypatch):
+    """POST /sync rejects non-https clone_url (defense in depth, also covered by Pydantic)."""
+    from api_gateway.routers.repositories import RepositoryDAO
+
+    db = MagicMock()
+    db.bind = MagicMock()
+    db.bind.dialect.name = "sqlite"
+
+    fake_repo = MagicMock()
+    fake_repo.repository_id = REPO_ID
+    fake_repo.clone_url = "ssh://git@gitlab.example.com/org/repo.git"
+    fake_repo.access_token = None
+
+    class _RepoDAOWithSsh:
+        def __init__(self, _db): pass
+        async def get_by_id(self, repository_id): return fake_repo
+
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOWithSsh
+    )
+
+    async def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
+        assert r.status_code == 422
+        body = r.json()
+        assert body["error_code"] in ("VALIDATION_ERROR", "ERROR")
+        assert "https" in body["message"].lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_sync_repository_502_on_git_error(monkeypatch):
+    """POST /sync returns 502 with stderr detail when git fails."""
+    from devmanager_git.fetcher import GitError
+    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
+
+    db = MagicMock()
+    db.bind = MagicMock()
+    db.bind.dialect.name = "sqlite"
+
+    fake_repo = MagicMock()
+    fake_repo.repository_id = REPO_ID
+    fake_repo.clone_url = "https://gitlab.example.com/org/repo.git"
+    fake_repo.access_token = None
+
+    class _RepoDAOOk:
+        def __init__(self, _db): pass
+        async def get_by_id(self, repository_id): return fake_repo
+
+    class _SettingDAOOk:
+        def __init__(self, _db): pass
+        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
+    )
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
+    )
+
+    async def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        def fake_sync_that_fails(clone_url, repo_dir, access_token=None):
+            raise GitError("git fetch failed: fatal: unable to update url base")
+
+        monkeypatch.setattr(
+            "api_gateway.routers.repositories.clone_or_fetch_sync",
+            fake_sync_that_fails,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
+        assert r.status_code == 502
+        body = r.json()
+        assert body["error_code"] == "ERROR"
+        assert "git sync failed" in body["message"]
+        assert "url base" in body["message"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
+    """POST /sync truncates stderr to 8KB and appends marker."""
+    from devmanager_git.fetcher import GitError
+    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
+
+    db = MagicMock()
+    db.bind = MagicMock()
+    db.bind.dialect.name = "sqlite"
+
+    fake_repo = MagicMock()
+    fake_repo.repository_id = REPO_ID
+    fake_repo.clone_url = "https://gitlab.example.com/org/repo.git"
+    fake_repo.access_token = None
+
+    class _RepoDAOOk:
+        def __init__(self, _db): pass
+        async def get_by_id(self, repository_id): return fake_repo
+
+    class _SettingDAOOk:
+        def __init__(self, _db): pass
+        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
+    )
+    monkeypatch.setattr(
+        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
+    )
+
+    async def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        huge_stderr = "x" * 20_000
+
+        def fake_sync_huge_stderr(clone_url, repo_dir, access_token=None):
+            raise GitError(huge_stderr)
+
+        monkeypatch.setattr(
+            "api_gateway.routers.repositories.clone_or_fetch_sync",
+            fake_sync_huge_stderr,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
+        assert r.status_code == 502
+        body = r.json()
+        message = body["message"]
+        assert "truncated" in message
+        assert len(message) < 12_000  # 8KB + overhead
+    finally:
+        app.dependency_overrides.clear()

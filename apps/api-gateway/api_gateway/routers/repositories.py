@@ -26,6 +26,20 @@ from api_gateway.schemas.models import PROVIDER_PATTERN, RepositoryResponse
 router = APIRouter(prefix="/v1/repositories", tags=["repositories"])
 
 
+_STDERR_MAX_BYTES = 8 * 1024  # 8KB
+
+
+def _truncate_stderr(msg: str) -> str:
+    """Truncate stderr to 8KB, keeping head and tail to preserve token errors."""
+    if len(msg.encode("utf-8")) <= _STDERR_MAX_BYTES:
+        return msg
+    half = _STDERR_MAX_BYTES // 2
+    head = msg[:half]
+    tail = msg[-half:]
+    skipped = len(msg) - 2 * half
+    return f"{head}\n\n(... {skipped} bytes truncated ...)\n\n{tail}"
+
+
 def clone_or_fetch_sync(clone_url: str, repo_dir: Path, access_token: str | None = None) -> None:
     """Sync wrapper around the async clone_or_fetch for asyncio.to_thread use."""
     # clone_or_fetch is async; we wrap it for to_thread by running it in a new event loop
@@ -238,6 +252,7 @@ async def sync_repository(
             clone_or_fetch_sync, repo.clone_url, repo_dir, repo.access_token
         )
     except GitError as e:
-        raise HTTPException(status_code=502, detail=f"git sync failed: {e}")
+        detail = _truncate_stderr(f"git sync failed: {e}")
+        raise HTTPException(status_code=502, detail=detail)
     elapsed = round(time.monotonic() - started, 2)
     return {"ok": True, "elapsed_sec": elapsed}
