@@ -83,6 +83,8 @@ Start PostgreSQL and Redis with Docker Compose:
 docker compose up -d postgres redis
 ```
 
+> **Note on the PostgreSQL image**: `migrations/postgres/013_team_ops_knowledge.sql` uses the `vector` extension (pgvector) for embedding columns and HNSW indexes. The stock `postgres:16` image does **not** ship this extension. If you bring up PostgreSQL via `docker compose`, switch the `postgres` service image to `pgvector/pgvector:pg16` (drop-in replacement that bundles the `vector` extension) before running migrations. The CI workflow already uses this image.
+
 Run database migrations:
 
 ```bash
