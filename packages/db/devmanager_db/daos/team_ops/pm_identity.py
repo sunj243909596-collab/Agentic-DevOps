@@ -43,9 +43,7 @@ class PmIdentityDAO:
         )
         return result.scalar_one_or_none()
 
-    async def list_active_by_person(
-        self, person_id: uuid.UUID
-    ) -> list[PmIdentity]:
+    async def list_active_by_person(self, person_id: uuid.UUID) -> list[PmIdentity]:
         result = await self._session.execute(
             select(PmIdentity)
             .where(
@@ -56,9 +54,7 @@ class PmIdentityDAO:
         )
         return list(result.scalars().all())
 
-    async def list_history_by_person(
-        self, person_id: uuid.UUID
-    ) -> list[PmIdentity]:
+    async def list_history_by_person(self, person_id: uuid.UUID) -> list[PmIdentity]:
         result = await self._session.execute(
             select(PmIdentity)
             .where(PmIdentity.person_id == person_id)

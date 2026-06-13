@@ -3,6 +3,7 @@
 Single source of truth for module / edge / scope graph / card / index.
 The disk JSON files in docs/code-map/ must round-trip through these models.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -24,6 +25,7 @@ class Module(BaseModel):
 
 class Edge(BaseModel):
     """`from` / `to` are reserved in pydantic — accept via aliases."""
+
     model_config = {"populate_by_name": True}
 
     from_: str = Field(alias="from")
@@ -45,6 +47,7 @@ class ScopeGraph(BaseModel):
 
 class InterfaceEntry(BaseModel):
     """Structured view of a module's outbound surface."""
+
     exports: list[str] = Field(default_factory=list)
     imports: list[str] = Field(default_factory=list)
     consumes_api: list[str] = Field(default_factory=list)
@@ -52,6 +55,7 @@ class InterfaceEntry(BaseModel):
 
 class DepEdge(BaseModel):
     """Structured dependency reference used in depends_on / depended_on_by."""
+
     id: str = Field(min_length=1)
     kind: str = ""
 

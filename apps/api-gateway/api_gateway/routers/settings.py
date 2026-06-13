@@ -1,24 +1,24 @@
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Any
 
+from devmanager_db.daos.audit_event import AuditEventDAO
+from devmanager_db.daos.setting import SettingDAO
+from devmanager_db.models import Setting
+from devmanager_db.secrets import encrypt_secret
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db, require_auth
-from devmanager_db.daos.audit_event import AuditEventDAO
-from devmanager_db.daos.setting import SettingDAO
-from devmanager_db.models import Setting
-from devmanager_db.secrets import encrypt_secret
 
 router = APIRouter(prefix="/v1/settings", tags=["settings"])
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class SettingOut(BaseModel):
     key: str
@@ -27,10 +27,10 @@ class SettingOut(BaseModel):
     updated_at: str
     updated_by: str | None = None
     is_secret: bool = False
-    is_set: bool = False           # for secret fields, True if a value is stored
+    is_set: bool = False  # for secret fields, True if a value is stored
 
     @classmethod
-    def from_orm_safe(cls, s: Setting, *, is_secret: bool = False) -> "SettingOut":
+    def from_orm_safe(cls, s: Setting, *, is_secret: bool = False) -> SettingOut:
         return cls(
             key=s.key,
             # Never expose secret values directly
@@ -44,9 +44,7 @@ class SettingOut(BaseModel):
 
 
 class UpdateSettingsIn(BaseModel):
-    items: dict[str, str] = Field(
-        ..., description="key → 新 value；只改提供的 key"
-    )
+    items: dict[str, str] = Field(..., description="key → 新 value；只改提供的 key")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,6 +69,7 @@ def _validate_path(key: str, value: str) -> str:
 
 def _validate_provider(key: str, value: str) -> str:
     from devmanager_llm import PROVIDERS
+
     if value not in PROVIDERS:
         raise HTTPException(
             status_code=400,
@@ -88,6 +87,7 @@ def _validate_base_url(key: str, value: str) -> str:
     # enforce this; a permissive regex is enough — the SDK will reject
     # anything malformed at call time with a clearer error.
     import re
+
     if not re.match(r"^https?://[^\s/$.?#].[^\s]*$", v, re.IGNORECASE):
         raise HTTPException(
             status_code=400,
@@ -98,6 +98,7 @@ def _validate_base_url(key: str, value: str) -> str:
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
 
 @router.get("", response_model=dict)
 async def list_settings(
@@ -149,12 +150,14 @@ async def update_settings(
                 try:
                     new_p.parent.mkdir(parents=True, exist_ok=True)
                     shutil.move(str(old_p), str(new_p))
-                    migration_log.append({
-                        "key": k,
-                        "from": str(old_p),
-                        "to": str(new_p),
-                        "migrated": True,
-                    })
+                    migration_log.append(
+                        {
+                            "key": k,
+                            "from": str(old_p),
+                            "to": str(new_p),
+                            "migrated": True,
+                        }
+                    )
                 except Exception as exc:
                     raise HTTPException(
                         status_code=500,
@@ -163,10 +166,15 @@ async def update_settings(
             elif not old_p.exists() and not new_p.exists():
                 # Nothing to migrate; just ensure target parent exists
                 new_p.parent.mkdir(parents=True, exist_ok=True)
-                migration_log.append({
-                    "key": k, "from": str(old_p), "to": str(new_p),
-                    "migrated": False, "note": "源目录不存在，仅创建目标父目录",
-                })
+                migration_log.append(
+                    {
+                        "key": k,
+                        "from": str(old_p),
+                        "to": str(new_p),
+                        "migrated": False,
+                        "note": "源目录不存在，仅创建目标父目录",
+                    }
+                )
 
         await dao.set_value(k, new_value, updated_by="ui")
 
@@ -180,7 +188,9 @@ async def update_settings(
                 actor="ui",
                 workflow_id=__import__("uuid").UUID(int=0),
                 event_type="settings.updated",
-                event_timestamp=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+                event_timestamp=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
                 metadata={"key": k, "value": v, "migration": migration_log},
             )
     except Exception:

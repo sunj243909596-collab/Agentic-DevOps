@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run all pending SQL migrations against the configured PostgreSQL database."""
+
 from __future__ import annotations
 
 import asyncio
@@ -26,9 +27,7 @@ async def apply_migration(conn: asyncpg.Connection, sql_path: Path) -> None:
     sql = sql_path.read_text(encoding="utf-8")
     async with conn.transaction():
         await conn.execute(sql)
-        await conn.execute(
-            "INSERT INTO schema_migrations (filename) VALUES ($1)", sql_path.name
-        )
+        await conn.execute("INSERT INTO schema_migrations (filename) VALUES ($1)", sql_path.name)
     print(f"✓  {sql_path.name}")
 
 

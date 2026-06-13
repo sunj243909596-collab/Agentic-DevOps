@@ -10,6 +10,7 @@ from .models import (
     PolicyDecision,
     PolicyDecisionValue,
     PublicationChannel,
+    ReportPublicationRequest,
     Repository,
     ReviewCategory,
     ReviewerFinding,
@@ -23,7 +24,6 @@ from .models import (
     Severity,
     TriggerEvent,
     TriggerType,
-    ReportPublicationRequest,
 )
 
 __all__ = [

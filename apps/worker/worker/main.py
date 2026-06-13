@@ -8,6 +8,7 @@ Environment variables:
   REDIS_URL      Redis connection DSN (default: redis://localhost:6379)
   DATABASE_URL   PostgreSQL DSN for async engine
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,16 +29,15 @@ _DATABASE_URL = os.getenv(
     # Fallback for local dev only — in production always set DATABASE_URL via env
     "postgresql+asyncpg://postgres:sinopharm%401089@localhost:5432/agent_devops",
 )
-log.info("Worker DATABASE_URL host: %s", _DATABASE_URL.split("@")[-1] if "@" in _DATABASE_URL else "?")
+_db_host = _DATABASE_URL.split("@")[-1] if "@" in _DATABASE_URL else "?"
+log.info("Worker DATABASE_URL host: %s", _db_host)
 
 
 async def startup(ctx: dict) -> None:
     """Create the shared DB engine and session factory; store in ARQ context."""
     engine = create_async_engine(_DATABASE_URL, pool_size=5, echo=False)
     ctx["engine"] = engine
-    ctx["make_session"] = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    ctx["make_session"] = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     log.info("Worker DB pool initialised")
 
 

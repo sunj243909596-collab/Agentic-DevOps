@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -28,6 +28,7 @@ _GRADE_THRESHOLDS = [
 
 # ── Protocol for Finding inputs (accepts DB model or plain dict) ──────────────
 
+
 class FindingLike(Protocol):
     @property
     def finding_id(self) -> str: ...
@@ -42,6 +43,7 @@ class FindingLike(Protocol):
 
 
 # ── Result types ──────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ScoreResult:
@@ -64,6 +66,7 @@ class ScoreResult:
 
 
 # ── Engine ────────────────────────────────────────────────────────────────────
+
 
 def _grade(score: float) -> str:
     for threshold, letter in _GRADE_THRESHOLDS:

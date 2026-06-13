@@ -3,13 +3,6 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api_gateway.dependencies import get_db, require_auth
-from api_gateway.schemas.models import PROVIDER_PATTERN, RepositoryResponse
 from devmanager_db.daos.repository import RepositoryDAO
 from devmanager_db.daos.setting import SettingDAO
 from devmanager_db.models import AnalysisRun, Baseline, TriggerEvent
@@ -18,8 +11,14 @@ from devmanager_git.fetcher import (
     list_refs,
     list_tree,
     read_file,
-    resolve_path,
 )
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api_gateway.dependencies import get_db, require_auth
+from api_gateway.schemas.models import PROVIDER_PATTERN, RepositoryResponse
 
 router = APIRouter(prefix="/v1/repositories", tags=["repositories"])
 
@@ -95,20 +94,28 @@ async def delete_repository(
         raise HTTPException(status_code=404, detail=f"Repository {repository_id} not found")
 
     # Count dependent rows
-    runs_count = (await db.execute(
-        select(AnalysisRun.run_id).where(AnalysisRun.repository_id == repository_id).limit(1)
-    )).first()
-    bases_count = (await db.execute(
-        select(Baseline.repository_id).where(Baseline.repository_id == repository_id).limit(1)
-    )).first()
-    trigs_count = (await db.execute(
-        select(TriggerEvent.event_id).where(TriggerEvent.repository_id == repository_id).limit(1)
-    )).first()
+    runs_count = (
+        await db.execute(
+            select(AnalysisRun.run_id).where(AnalysisRun.repository_id == repository_id).limit(1)
+        )
+    ).first()
+    bases_count = (
+        await db.execute(
+            select(Baseline.repository_id).where(Baseline.repository_id == repository_id).limit(1)
+        )
+    ).first()
+    trigs_count = (
+        await db.execute(
+            select(TriggerEvent.event_id)
+            .where(TriggerEvent.repository_id == repository_id)
+            .limit(1)
+        )
+    ).first()
     if runs_count or bases_count or trigs_count:
         raise HTTPException(
             status_code=409,
             detail="仓库有历史运行 / 基线 / 触发事件，不能直接删除。"
-                   "请先用 PATCH status='archived' 归档，或先删除相关运行。",
+            "请先用 PATCH status='archived' 归档，或先删除相关运行。",
         )
     await dao.delete(repository_id)
     await db.commit()
@@ -128,7 +135,10 @@ async def _resolve_repo_dir(db: AsyncSession, repository_id: uuid.UUID) -> Path:
     if not (repo_dir / "HEAD").exists():
         raise HTTPException(
             status_code=409,
-            detail=f"仓库尚未在本地克隆。仓库路径：{repo_dir}。请先触发一次 run 让 worker 完成 git clone。",
+            detail=(
+                f"仓库尚未在本地克隆。仓库路径：{repo_dir}。"
+                "请先触发一次 run 让 worker 完成 git clone。"
+            ),
         )
     return repo_dir
 

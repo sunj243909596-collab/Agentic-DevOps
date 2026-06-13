@@ -78,17 +78,13 @@ async def detect_history_rewrite(repo_dir: Path, baseline_sha: str, target_sha: 
 
 async def get_diff_numstat(repo_dir: Path, from_ref: str, to_ref: str) -> str:
     if from_ref == _EMPTY_TREE:
-        return await run_git(
-            ["git", "diff", "--numstat", _EMPTY_TREE, to_ref], repo_dir
-        )
+        return await run_git(["git", "diff", "--numstat", _EMPTY_TREE, to_ref], repo_dir)
     return await run_git(["git", "diff", "--numstat", from_ref, to_ref], repo_dir)
 
 
 async def get_diff_name_status(repo_dir: Path, from_ref: str, to_ref: str) -> str:
     if from_ref == _EMPTY_TREE:
-        return await run_git(
-            ["git", "diff", "--name-status", "-M", _EMPTY_TREE, to_ref], repo_dir
-        )
+        return await run_git(["git", "diff", "--name-status", "-M", _EMPTY_TREE, to_ref], repo_dir)
     return await run_git(["git", "diff", "--name-status", "-M", from_ref, to_ref], repo_dir)
 
 
@@ -97,12 +93,26 @@ async def get_diff_name_status(repo_dir: Path, from_ref: str, to_ref: str) -> st
 
 async def list_refs(repo_dir: Path) -> list[dict]:
     """Return all branches + tags as [{name, type, sha}]."""
-    out = await run_git(["git", "for-each-ref", "--format=%(objectname)|%(refname:short)|%(refname)", "--sort=-committerdate"], repo_dir)
+    out = await run_git(
+        [
+            "git",
+            "for-each-ref",
+            "--format=%(objectname)|%(refname:short)|%(refname)",
+            "--sort=-committerdate",
+        ],
+        repo_dir,
+    )
     refs: list[dict] = []
     for line in out.strip().splitlines():
-        if not line: continue
+        if not line:
+            continue
         sha, short, full = line.split("|", 2)
-        ref_type = "branch" if full.startswith("refs/heads/") else "tag" if full.startswith("refs/tags/") else "other"
+        if full.startswith("refs/heads/"):
+            ref_type = "branch"
+        elif full.startswith("refs/tags/"):
+            ref_type = "tag"
+        else:
+            ref_type = "other"
         refs.append({"name": short, "type": ref_type, "sha": sha})
     return refs
 
@@ -131,7 +141,8 @@ async def list_tree(repo_dir: Path, ref: str, path: str = "") -> list[dict]:
     out = await run_git(args, repo_dir)
     items: list[dict] = []
     for line in out.strip().splitlines():
-        if not line: continue
+        if not line:
+            continue
         # format: <mode> <type> <object>\t<name>
         # `-l` adds size: <mode> <type> <object> <size>\t<name>
         head, name = line.split("\t", 1)
@@ -142,12 +153,14 @@ async def list_tree(repo_dir: Path, ref: str, path: str = "") -> list[dict]:
             _mode, kind, _sha = parts
             size = None
         full_path = f"{target}/{name}" if target != "." else name
-        items.append({
-            "name": name,
-            "path": full_path,
-            "type": kind,  # 'blob' (file) or 'tree' (dir)
-            "size": int(size) if size and size != "-" else None,
-        })
+        items.append(
+            {
+                "name": name,
+                "path": full_path,
+                "type": kind,  # 'blob' (file) or 'tree' (dir)
+                "size": int(size) if size and size != "-" else None,
+            }
+        )
     items.sort(key=lambda x: (0 if x["type"] == "tree" else 1, x["name"].lower()))
     return items
 

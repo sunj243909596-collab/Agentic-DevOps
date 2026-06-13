@@ -3,13 +3,13 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
+from devmanager_db.daos.report import ReportDAO
+from devmanager_reporting.service import AlreadyReportedError, ReportError, generate_report
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db, require_auth
-from devmanager_db.daos.report import ReportDAO
-from devmanager_reporting.service import AlreadyReportedError, ReportError, generate_report
 
 router = APIRouter(prefix="/v1/analysis-runs", tags=["report"])
 

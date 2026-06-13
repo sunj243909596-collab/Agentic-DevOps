@@ -18,20 +18,20 @@ Events ignored (no run created, returns 202 with message):
   • MR actions other than open / update / reopen / merge
   • system hooks
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import uuid
 
+from devmanager_db.daos.analysis_run import AnalysisRunDAO
+from devmanager_db.daos.repository import RepositoryDAO
+from devmanager_db.models import AnalysisRun
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db
 from api_gateway.queue import get_arq_pool
-from devmanager_db.daos.analysis_run import AnalysisRunDAO
-from devmanager_db.daos.repository import RepositoryDAO
-from devmanager_db.models import AnalysisRun
 
 log = logging.getLogger(__name__)
 
@@ -205,6 +205,7 @@ async def gitlab_webhook(
         return {"message": f"event '{x_gitlab_event}' not handled"}
 
     import json
+
     payload: dict = json.loads(body)
 
     event_data: dict | None

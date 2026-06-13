@@ -44,10 +44,12 @@ class Repository(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "provider IN ('github', 'gitlab', 'other')", name="ck_repositories_provider",
+            "provider IN ('github', 'gitlab', 'other')",
+            name="ck_repositories_provider",
         ),
         CheckConstraint(
-            "status IN ('active', 'disabled', 'archived')", name="ck_repositories_status",
+            "status IN ('active', 'disabled', 'archived')",
+            name="ck_repositories_status",
         ),
     )
 
@@ -154,11 +156,14 @@ class ReviewTask(Base):
     )
     category: Mapped[str] = mapped_column(Text, nullable=False)
     change_unit_ids: Mapped[list[uuid.UUID]] = mapped_column(
-        ARRAY(UUID(as_uuid=True)), nullable=False,
+        ARRAY(UUID(as_uuid=True)),
+        nullable=False,
     )
     tool_evidence_refs: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     knowledge_context_refs: Mapped[list[str]] = mapped_column(
-        ARRAY(Text), nullable=False, default=list,
+        ARRAY(Text),
+        nullable=False,
+        default=list,
     )
     constraints: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
@@ -190,7 +195,9 @@ class Finding(Base):
     verification: Mapped[str] = mapped_column(Text, nullable=False)
     evidence_refs: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
     related_knowledge_refs: Mapped[list[str]] = mapped_column(
-        ARRAY(Text), nullable=False, default=list,
+        ARRAY(Text),
+        nullable=False,
+        default=list,
     )
     status: Mapped[str] = mapped_column(Text, nullable=False, default="open")
     dedupe_key: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -294,7 +301,10 @@ class AuditEvent(Base):
     policy_decision: Mapped[str | None] = mapped_column(Text, nullable=True)
     approval_identity: Mapped[str | None] = mapped_column(Text, nullable=True)
     event_metadata: Mapped[dict[str, Any]] = mapped_column(
-        "metadata", JSONB, nullable=False, default=dict,
+        "metadata",
+        JSONB,
+        nullable=False,
+        default=dict,
     )
     event_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     inserted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -340,9 +350,7 @@ class Person(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('active', 'inactive', 'archived')", name="ck_person_status"
-        ),
+        CheckConstraint("status IN ('active', 'inactive', 'archived')", name="ck_person_status"),
         CheckConstraint(
             "data_access_scope IN ('self', 'team_lead', 'platform_admin')",
             name="ck_person_data_access_scope",
@@ -369,9 +377,7 @@ class TeamMembership(Base):
     left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
-        CheckConstraint(
-            "role IN ('member', 'lead', 'admin')", name="ck_team_membership_role"
-        ),
+        CheckConstraint("role IN ('member', 'lead', 'admin')", name="ck_team_membership_role"),
         Index("idx_team_membership_person", "person_id"),
     )
 
@@ -422,15 +428,9 @@ class Iteration(Base):
     start_date: Mapped[datetime] = mapped_column(Date, nullable=False)
     end_date: Mapped[datetime] = mapped_column(Date, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
-    pm_created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    pm_updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    last_synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    pm_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pm_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -458,15 +458,9 @@ class Issue(Base):
         ForeignKey("iteration.iteration_id", ondelete="SET NULL"),
         nullable=True,
     )
-    pm_created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    pm_updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    last_synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    pm_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pm_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -501,18 +495,14 @@ class IssueAssignment(Base):
     pm_username: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(Text, nullable=False)
     weight: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False, default=1.0)
-    last_synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
             "role IN ('assignee', 'reporter', 'watcher', 'mentioned')",
             name="ck_issue_assignment_role",
         ),
-        UniqueConstraint(
-            "issue_id", "pm_user_id", "role", name="uq_issue_assignment_identity"
-        ),
+        UniqueConstraint("issue_id", "pm_user_id", "role", name="uq_issue_assignment_identity"),
         Index("idx_issue_assignment_issue", "issue_id"),
         Index("idx_issue_assignment_person", "person_id"),
         Index("idx_issue_assignment_pm_user", "pm_user_id"),
@@ -532,15 +522,9 @@ class MrReviewEvent(Base):
     source_branch: Mapped[str | None] = mapped_column(Text, nullable=True)
     target_branch: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
-    event_created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    raw_payload: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
-    )
-    ingested_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    event_created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    raw_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -550,7 +534,10 @@ class MrReviewEvent(Base):
         ),
         Index(
             "uq_mr_review_event_idem",
-            "project_id", "mr_iid", "action", "event_created_at",
+            "project_id",
+            "mr_iid",
+            "action",
+            "event_created_at",
             unique=True,
         ),
         Index("idx_mr_review_event_project", "project_id"),
@@ -572,9 +559,7 @@ class PmSyncCursor(Base):
 
     source_key: Mapped[str] = mapped_column(Text, primary_key=True)
     cursor_value: Mapped[str | None] = mapped_column(Text, nullable=True)
-    last_synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 # ── S4 P4 — Derived cache (3 张派生表) ─────────────────────────────────────
@@ -589,26 +574,18 @@ class WorkloadSnapshot(Base):
 
     __tablename__ = "workload_snapshot"
 
-    person_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
+    person_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     time_window: Mapped[str] = mapped_column(Text, primary_key=True)
     open_issues: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    in_progress_issues: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
-    completed_issues: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
+    in_progress_issues: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    completed_issues: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     estimate_hours_remaining: Mapped[float] = mapped_column(
         Numeric(12, 2), nullable=False, default=0
     )
     estimate_hours_completed: Mapped[float] = mapped_column(
         Numeric(12, 2), nullable=False, default=0
     )
-    computed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -629,33 +606,23 @@ class CapacitySnapshot(Base):
 
     __tablename__ = "capacity_snapshot"
 
-    person_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
+    person_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     iteration_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("iteration.iteration_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    estimated_hours: Mapped[float] = mapped_column(
-        Numeric(12, 2), nullable=False, default=0
-    )
+    estimated_hours: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     weekly_capacity_hours: Mapped[float] = mapped_column(
         Numeric(6, 2), nullable=False, default=40.0
     )
     iteration_weeks: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
-    load_ratio: Mapped[float] = mapped_column(
-        Numeric(6, 3), nullable=False, default=0.0
-    )
-    computed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    load_ratio: Mapped[float] = mapped_column(Numeric(6, 3), nullable=False, default=0.0)
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint("load_ratio >= 0", name="ck_capacity_load_ratio_nonneg"),
-        CheckConstraint(
-            "weekly_capacity_hours > 0", name="ck_capacity_weekly_positive"
-        ),
+        CheckConstraint("weekly_capacity_hours > 0", name="ck_capacity_weekly_positive"),
         CheckConstraint("iteration_weeks > 0", name="ck_capacity_weeks_positive"),
         Index("idx_capacity_snapshot_iteration", "iteration_id"),
     )
@@ -670,16 +637,12 @@ class FamiliarityEdge(Base):
 
     __tablename__ = "familiarity_edge"
 
-    person_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
+    person_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     area_key: Mapped[str] = mapped_column(Text, primary_key=True)
     commits_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     lines_changed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     score: Mapped[float] = mapped_column(Numeric(8, 3), nullable=False, default=0.0)
-    last_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (Index("idx_familiarity_edge_person", "person_id"),)
 
@@ -696,27 +659,17 @@ class Suggestion(Base):
 
     __tablename__ = "suggestion"
 
-    suggestion_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
+    suggestion_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     target_type: Mapped[str] = mapped_column(Text, nullable=False)
     target_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     suggestion_type: Mapped[str] = mapped_column(Text, nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     source_refs: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
-    valid_from: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    valid_to: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    generated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -739,9 +692,7 @@ class SuggestionFeedback(Base):
 
     __tablename__ = "suggestion_feedback"
 
-    feedback_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
+    feedback_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     suggestion_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("suggestion.suggestion_id", ondelete="CASCADE"),
@@ -750,9 +701,7 @@ class SuggestionFeedback(Base):
     actor: Mapped[str] = mapped_column(Text, nullable=False)
     feedback_type: Mapped[str] = mapped_column(Text, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
@@ -775,18 +724,15 @@ class WebhookIdempotency(Base):
     idempotency_key: Mapped[str] = mapped_column(Text, primary_key=True)
     source: Mapped[str] = mapped_column(Text, nullable=False)
     event_type: Mapped[str] = mapped_column(Text, nullable=False)
-    received_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="received")
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
-            "source IN ('gitlab', 'pm')", name="ck_webhook_idempotency_source",
+            "source IN ('gitlab', 'pm')",
+            name="ck_webhook_idempotency_source",
         ),
         CheckConstraint(
             "status IN ('received', 'processed', 'failed')",
@@ -813,9 +759,7 @@ class KnowledgeDocument(Base):
     indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint("source", "title", "version", name="uq_knowledge_doc_ver"),
-    )
+    __table_args__ = (UniqueConstraint("source", "title", "version", name="uq_knowledge_doc_ver"),)
 
 
 class KnowledgeChunk(Base):
@@ -837,4 +781,3 @@ class KnowledgeChunk(Base):
     __table_args__ = (
         UniqueConstraint("document_id", "chunk_index", name="uq_knowledge_chunk_idx"),
     )
-

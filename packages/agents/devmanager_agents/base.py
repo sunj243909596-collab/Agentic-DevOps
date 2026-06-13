@@ -4,6 +4,7 @@ Kept after the BaseReviewer removal (plan 7.10.2 follow-up, 2026-06-11):
 ``extract_json_array`` is still used by ``agent_reviewer.py`` to parse the
 final findings JSON returned by the unified agent loop.
 """
+
 from __future__ import annotations
 
 import json

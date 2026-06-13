@@ -45,18 +45,18 @@ class RepositoryDAO:
         from datetime import datetime
 
         from sqlalchemy import update as sa_update
+
         await self._session.execute(
             sa_update(Repository)
             .where(Repository.repository_id == repository_id)
             .values(clone_url=clone_url, updated_at=datetime.now(UTC))
         )
 
-    async def update_access_token(
-        self, repository_id: uuid.UUID, access_token: str | None
-    ) -> None:
+    async def update_access_token(self, repository_id: uuid.UUID, access_token: str | None) -> None:
         from datetime import datetime
 
         from sqlalchemy import update as sa_update
+
         await self._session.execute(
             sa_update(Repository)
             .where(Repository.repository_id == repository_id)
@@ -80,7 +80,8 @@ class RepositoryDAO:
         from datetime import datetime
 
         from sqlalchemy import update as sa_update
-        values: dict = { "updated_at": datetime.now(UTC) }
+
+        values: dict = {"updated_at": datetime.now(UTC)}
         if clone_url is not None:
             values["clone_url"] = clone_url
         elif clear_clone_url:
@@ -98,13 +99,12 @@ class RepositoryDAO:
         if len(values) == 1:
             return  # nothing to update
         await self._session.execute(
-            sa_update(Repository)
-            .where(Repository.repository_id == repository_id)
-            .values(**values)
+            sa_update(Repository).where(Repository.repository_id == repository_id).values(**values)
         )
 
     async def delete(self, repository_id: uuid.UUID) -> bool:
         from sqlalchemy import delete as sa_delete
+
         result = await self._session.execute(
             sa_delete(Repository).where(Repository.repository_id == repository_id)
         )

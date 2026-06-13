@@ -1,4 +1,5 @@
 """S4 P3 — PmSyncCursorDAO。"""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

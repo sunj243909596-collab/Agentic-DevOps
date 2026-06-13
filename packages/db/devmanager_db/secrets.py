@@ -7,6 +7,7 @@ Uses Fernet (AES-128-CBC + HMAC-SHA256) with a key sourced from:
 The key is per-host. In production set `SECRETS_KEY` in the environment.
 In dev, the file is created on first use with restrictive permissions.
 """
+
 from __future__ import annotations
 
 import os

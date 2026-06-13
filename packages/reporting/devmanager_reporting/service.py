@@ -3,10 +3,8 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from devmanager_db.daos.analysis_run import AnalysisRunDAO
 from devmanager_db.daos.audit_event import AuditEventDAO
@@ -16,6 +14,8 @@ from devmanager_db.daos.report import ReportDAO
 from devmanager_db.daos.repository import RepositoryDAO
 from devmanager_db.daos.score import ScoreDAO
 from devmanager_db.models import Report
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from devmanager_reporting.renderer import render_markdown
 
 log = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ async def generate_report(run_id: uuid.UUID, db: AsyncSession) -> Report:
     report_path.write_text(markdown, encoding="utf-8")
     content_reference = f"file://{report_path}"
 
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
     report = await report_dao.create(
         run_id=run_id,
         report_type="daily_markdown",

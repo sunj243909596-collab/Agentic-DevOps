@@ -39,11 +39,11 @@ What this script does (read-only, no DB writes):
 Nothing is written to the database; no external services are called beyond
 the git host and (optionally) the LLM endpoint.
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import logging
 import os
 import statistics
@@ -52,7 +52,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -61,6 +61,7 @@ log = logging.getLogger("shadow_pilot")
 
 
 # ── Lazy imports of workspace packages ───────────────────────────────────────
+
 
 def _import_packages():
     """Ensure the workspace packages are importable when run via uv run."""
@@ -74,6 +75,7 @@ def _import_packages():
 
 
 # ── Minimal fake domain objects (no DB needed) ───────────────────────────────
+
 
 @dataclass
 class _Run:
@@ -186,6 +188,7 @@ def _cu_from_dict(d: dict, hunks_map: dict) -> _ChangeUnit:
 
 # ── Agent review (optional) ───────────────────────────────────────────────────
 
+
 async def _run_agent_review(
     units: list[_ChangeUnit],
     concurrency: int,
@@ -232,7 +235,7 @@ async def _run_agent_review(
 
     sem = asyncio.Semaphore(concurrency)
     results: list[dict] = []
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
+    today = datetime.now(UTC).strftime("%Y%m%d")
     idx = 1
 
     reviewable = [u for u in units if not u.is_binary and not u.is_generated and not u.is_vendor]
@@ -275,25 +278,28 @@ async def _run_agent_review(
 def _to_finding_objs(raw: list[dict]) -> list[_Finding]:
     out = []
     for f in raw:
-        out.append(_Finding(
-            finding_id=f.get("finding_id", "F-unknown"),
-            category=f.get("category", "unknown"),
-            severity=f.get("severity", "informational"),
-            confidence=float(f.get("confidence", 0.7)),
-            file_path=f.get("file", f.get("file_path", "unknown")),
-            start_line=int(f.get("start_line", 1)),
-            end_line=int(f.get("end_line", 1)),
-            observation=f.get("observation", ""),
-            impact=f.get("impact", ""),
-            recommendation=f.get("recommendation", ""),
-            verification=f.get("verification", ""),
-            evidence_refs=f.get("evidence_refs", []),
-            dedupe_key=f.get("dedupe_key", ""),
-        ))
+        out.append(
+            _Finding(
+                finding_id=f.get("finding_id", "F-unknown"),
+                category=f.get("category", "unknown"),
+                severity=f.get("severity", "informational"),
+                confidence=float(f.get("confidence", 0.7)),
+                file_path=f.get("file", f.get("file_path", "unknown")),
+                start_line=int(f.get("start_line", 1)),
+                end_line=int(f.get("end_line", 1)),
+                observation=f.get("observation", ""),
+                impact=f.get("impact", ""),
+                recommendation=f.get("recommendation", ""),
+                verification=f.get("verification", ""),
+                evidence_refs=f.get("evidence_refs", []),
+                dedupe_key=f.get("dedupe_key", ""),
+            )
+        )
     return out
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
+
 
 async def run_shadow_pilot(
     clone_url: str,
@@ -328,7 +334,7 @@ async def run_shadow_pilot(
     repo_dir = workspace / "repo.git"
     hunks_dir = workspace / "hunks" / str(run_id)
 
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     log.info("=== DevManager Shadow Pilot ===")
     log.info("Repository : %s", repo_name)
     log.info("Clone URL  : %s", clone_url)
@@ -399,7 +405,7 @@ async def run_shadow_pilot(
         target_sha=target[:40],
         baseline_sha=baseline[:40],
         started_at=started_at,
-        completed_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(UTC),
     )
 
     markdown = render_markdown(
@@ -438,9 +444,7 @@ def _resolve_default_clone_url(explicit: str | None) -> str:
     except (subprocess.CalledProcessError, FileNotFoundError):
         out = ""
     if not out:
-        raise SystemExit(
-            "Missing --clone-url (and no git remote.origin.url found in cwd)"
-        )
+        raise SystemExit("Missing --clone-url (and no git remote.origin.url found in cwd)")
     return out
 
 
@@ -462,9 +466,23 @@ def _format_benchmark_markdown(
     latencies = [m.agent_latency_s for m in metrics]
     tokens = [m.input_tokens + m.output_tokens for m in metrics]
     providers = sorted({m.provider for m in metrics})
+    if latencies:
+        latency_p50 = f"| agent latency p50 | {statistics.median(latencies):.2f}s |"
+        latency_p95 = f"| agent latency p95 | {_percentile(latencies, 95):.2f}s |"
+    else:
+        latency_p50 = "| agent latency p50 | n/a |"
+        latency_p95 = "| agent latency p95 | n/a |"
+
+    if tokens:
+        tokens_p50 = f"| tokens p50 (in+out) | {statistics.median(tokens):.0f} |"
+        tokens_p95 = f"| tokens p95 (in+out) | {_percentile(tokens, 95):.0f} |"
+    else:
+        tokens_p50 = "| tokens p50 | n/a |"
+        tokens_p95 = "| tokens p95 | n/a |"
+
     lines = [
         "",
-        f"## Shadow pilot benchmark ({datetime.now(timezone.utc).date().isoformat()})",
+        f"## Shadow pilot benchmark ({datetime.now(UTC).date().isoformat()})",
         "",
         f"- clone_url: `{clone_url}`",
         f"- target ref: `{target_ref}`",
@@ -474,10 +492,10 @@ def _format_benchmark_markdown(
         "",
         "| metric | value |",
         "|---|---|",
-        f"| agent latency p50 | {statistics.median(latencies):.2f}s |" if latencies else "| agent latency p50 | n/a |",
-        f"| agent latency p95 | {_percentile(latencies, 95):.2f}s |" if latencies else "| agent latency p95 | n/a |",
-        f"| tokens p50 (in+out) | {statistics.median(tokens):.0f} |" if tokens else "| tokens p50 | n/a |",
-        f"| tokens p95 (in+out) | {_percentile(tokens, 95):.0f} |" if tokens else "| tokens p95 | n/a |",
+        latency_p50,
+        latency_p95,
+        tokens_p50,
+        tokens_p95,
         f"| findings total | {sum(m.findings for m in metrics)} |",
         "",
         "### Per-sample detail",
@@ -512,9 +530,7 @@ async def _list_commit_pairs(
     pairs: list[tuple[str, str]] = []
     for commit in commits:
         try:
-            parent = (
-                await run_git(["git", "rev-parse", f"{commit}^"], repo_dir)
-            ).strip()
+            parent = (await run_git(["git", "rev-parse", f"{commit}^"], repo_dir)).strip()
         except GitError:
             continue
         pairs.append((parent, commit))
@@ -585,26 +601,34 @@ async def run_benchmark_samples(
             continue
 
         units = parse_diff(
-            numstat, name_status, run_id, repo_name, baseline_sha, target_sha,
+            numstat,
+            name_status,
+            run_id,
+            repo_name,
+            baseline_sha,
+            target_sha,
         )
         hunks_map: dict[str, str] = {}
         if units:
             try:
                 hunks_map = await extract_all_hunks(
-                    repo_dir, baseline_sha, target_sha, units, hunks_dir,
+                    repo_dir,
+                    baseline_sha,
+                    target_sha,
+                    units,
+                    hunks_dir,
                 )
             except Exception as exc:
                 log.warning("Sample %d hunk extraction failed: %s", i, exc)
 
         cu_objs = [_cu_from_dict(u, hunks_map) for u in units]
         reviewable = [
-            u for u in cu_objs
-            if not u.is_binary and not u.is_generated and not u.is_vendor
+            u for u in cu_objs if not u.is_binary and not u.is_generated and not u.is_vendor
         ]
         raw_findings, agent_metrics = await _run_agent_review(
-            cu_objs, concurrency, force_mock=not (
-                os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_API_KEY")
-            ),
+            cu_objs,
+            concurrency,
+            force_mock=not (os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_API_KEY")),
         )
         collected.append(
             SampleMetrics(

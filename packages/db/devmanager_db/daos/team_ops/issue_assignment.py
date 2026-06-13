@@ -78,9 +78,7 @@ class IssueAssignmentDAO:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def link_to_person(
-        self, assignment_id: uuid.UUID, person_id: uuid.UUID
-    ) -> None:
+    async def link_to_person(self, assignment_id: uuid.UUID, person_id: uuid.UUID) -> None:
         """Identity CLI 写入时调用：把已知的 person 关联到 assignment。"""
         await self._session.execute(
             sa_update(IssueAssignment)

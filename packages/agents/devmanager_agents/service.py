@@ -28,7 +28,11 @@ class ReviewError(Exception):
 
 
 def _dedupe_key(
-    repository: str, file: str, category: str, start_line: int, observation: str,
+    repository: str,
+    file: str,
+    category: str,
+    start_line: int,
+    observation: str,
 ) -> str:
     raw = f"{repository}::{file}::{category}::{start_line}::{observation[:40]}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
@@ -78,7 +82,8 @@ async def review_run(
     units = await cu_dao.list_by_run(run_id)
     if repo_dir is not None:
         reviewable = [
-            u for u in units
+            u
+            for u in units
             if is_worth_reviewing(
                 file_path=u.file_path,
                 repo_dir=repo_dir,

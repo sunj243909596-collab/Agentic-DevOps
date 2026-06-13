@@ -6,8 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ── Shared ────────────────────────────────────────────────────────────────────
+
 
 class OrmBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -21,6 +21,7 @@ class ErrorResponse(BaseModel):
 
 # ── Repositories ─────────────────────────────────────────────────────────────
 
+
 class RepositoryResponse(OrmBase):
     repository_id: uuid.UUID
     provider: str
@@ -32,15 +33,18 @@ class RepositoryResponse(OrmBase):
 
 PROVIDER_PATTERN = r"^(github|gitlab|other)$"
 RepositoryProvider = str  # 'github' | 'gitlab' | 'other'
+GITLAB_REPO_PATTERN = r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$"
+GITLAB_REPO_DESC = "GitLab path_with_namespace 形式，1~N 段，如 owner/repo 或 group/subgroup/repo"
 
 
 # ── Trigger Events ────────────────────────────────────────────────────────────
+
 
 class TriggerEventIn(BaseModel):
     event_id: uuid.UUID
     event_type: str
     source: str
-    repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$", description="GitLab path_with_namespace 形式，1~N 段，如 owner/repo 或 group/subgroup/repo")
+    repository: str = Field(pattern=GITLAB_REPO_PATTERN, description=GITLAB_REPO_DESC)
     target_branch: str
     correlation_id: uuid.UUID
     event_timestamp: datetime
@@ -56,8 +60,9 @@ class TriggerEventOut(BaseModel):
 
 # ── Analysis Runs ─────────────────────────────────────────────────────────────
 
+
 class CreateAnalysisRunIn(BaseModel):
-    repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$", description="GitLab path_with_namespace 形式，1~N 段，如 owner/repo 或 group/subgroup/repo")
+    repository: str = Field(pattern=GITLAB_REPO_PATTERN, description=GITLAB_REPO_DESC)
     target_branch: str
     clone_url: str | None = None
     target_sha: str | None = None
@@ -87,6 +92,7 @@ class AnalysisRunResponse(OrmBase):
 
 # ── Change Units ──────────────────────────────────────────────────────────────
 
+
 class ChangeUnitResponse(OrmBase):
     change_unit_id: uuid.UUID
     run_id: uuid.UUID
@@ -108,6 +114,7 @@ class ChangeUnitResponse(OrmBase):
 
 
 # ── Findings ──────────────────────────────────────────────────────────────────
+
 
 class FindingResponse(OrmBase):
     finding_id: str
@@ -137,6 +144,7 @@ class FindingStatusUpdateIn(BaseModel):
 
 # ── Score ─────────────────────────────────────────────────────────────────────
 
+
 class ScoreResponse(OrmBase):
     score_id: uuid.UUID
     run_id: uuid.UUID
@@ -153,6 +161,7 @@ class ScoreResponse(OrmBase):
 
 # ── Report ────────────────────────────────────────────────────────────────────
 
+
 class ReportResponse(OrmBase):
     report_id: uuid.UUID
     run_id: uuid.UUID
@@ -162,6 +171,7 @@ class ReportResponse(OrmBase):
 
 
 # ── Audit Events ──────────────────────────────────────────────────────────────
+
 
 class AuditEventResponse(OrmBase):
     event_id: uuid.UUID
@@ -181,6 +191,7 @@ class AuditEventResponse(OrmBase):
 
 
 # ── Publication Requests ──────────────────────────────────────────────────────
+
 
 class PublicationRequestIn(BaseModel):
     report_id: uuid.UUID

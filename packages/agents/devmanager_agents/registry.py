@@ -41,13 +41,9 @@ class SkillRegistry:
 
     def register(self, skill: Skill) -> None:
         if not inspect.iscoroutinefunction(skill.handler):
-            raise ValueError(
-                f"skill {skill.name!r} handler must be async"
-            )
+            raise ValueError(f"skill {skill.name!r} handler must be async")
         if skill.name in self._skills:
-            raise ValueError(
-                f"skill {skill.name!r} already registered"
-            )
+            raise ValueError(f"skill {skill.name!r} already registered")
         self._skills[skill.name] = skill
 
     def get(self, name: str) -> Skill:
@@ -71,9 +67,7 @@ class SkillRegistry:
 
     def replace(self, skill: Skill) -> None:
         if not inspect.iscoroutinefunction(skill.handler):
-            raise ValueError(
-                f"skill {skill.name!r} handler must be async"
-            )
+            raise ValueError(f"skill {skill.name!r} handler must be async")
         self._skills[skill.name] = skill
 
     def to_tool_definitions(self) -> list[dict]:  # type: ignore[valid-type]

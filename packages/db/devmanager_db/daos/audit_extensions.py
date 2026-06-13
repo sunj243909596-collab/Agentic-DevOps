@@ -3,6 +3,7 @@
 把 `suggestion.generated` / `suggestion.viewed` / `suggestion.feedback` 事件
 封装成薄函数，调用方只传业务字段。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -68,7 +69,7 @@ async def record_suggestion_feedback(
     *,
     actor: str,
     suggestion_id: uuid.UUID,
-    feedback_type: str,             # 'accepted' | 'dismissed' | 'commented'
+    feedback_type: str,  # 'accepted' | 'dismissed' | 'commented'
     comment: str | None = None,
 ) -> None:
     await audit_dao.append(

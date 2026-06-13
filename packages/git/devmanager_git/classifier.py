@@ -86,9 +86,17 @@ _TEST_PATTERNS = [
 
 _CONFIG_EXTS = {".yaml", ".yml", ".toml", ".json", ".ini", ".cfg", ".conf", ".env"}
 _DEP_FILES = {
-    "package.json", "requirements.txt", "Pipfile", "pyproject.toml",
-    "pom.xml", "build.gradle", "Cargo.toml", "go.mod", "go.sum",
-    "Gemfile", "composer.json",
+    "package.json",
+    "requirements.txt",
+    "Pipfile",
+    "pyproject.toml",
+    "pom.xml",
+    "build.gradle",
+    "Cargo.toml",
+    "go.mod",
+    "go.sum",
+    "Gemfile",
+    "composer.json",
 }
 
 

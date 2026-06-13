@@ -1,4 +1,5 @@
 """S4 P5 — Suggestion + SuggestionFeedback + WebhookIdempotency DAO。"""
+
 from __future__ import annotations
 
 import uuid
@@ -75,7 +76,10 @@ class SuggestionDAO:
         return list(result.scalars().all())
 
     async def list_active(
-        self, *, suggestion_type: str | None = None, limit: int = 100,
+        self,
+        *,
+        suggestion_type: str | None = None,
+        limit: int = 100,
     ) -> list[Suggestion]:
         """列出未过期、未被驳回的 suggestion。"""
         now = datetime.now(UTC)
@@ -90,6 +94,7 @@ class SuggestionDAO:
         )
         # valid_to IS NULL OR valid_to > now
         from sqlalchemy import or_
+
         stmt = stmt.where(or_(Suggestion.valid_to.is_(None), Suggestion.valid_to > now))
         if suggestion_type is not None:
             stmt = stmt.where(Suggestion.suggestion_type == suggestion_type)
@@ -97,9 +102,12 @@ class SuggestionDAO:
         return list(result.scalars().all())
 
     async def update_status(
-        self, suggestion_id: uuid.UUID, status: str,
+        self,
+        suggestion_id: uuid.UUID,
+        status: str,
     ) -> bool:
         from sqlalchemy import update as sa_update
+
         result = await self._session.execute(
             sa_update(Suggestion)
             .where(Suggestion.suggestion_id == suggestion_id)
@@ -136,7 +144,8 @@ class SuggestionFeedbackDAO:
         return row
 
     async def list_by_suggestion(
-        self, suggestion_id: uuid.UUID,
+        self,
+        suggestion_id: uuid.UUID,
     ) -> list[SuggestionFeedback]:
         result = await self._session.execute(
             select(SuggestionFeedback)
@@ -154,7 +163,11 @@ class WebhookIdempotencyDAO:
         self._session = session
 
     async def reserve(
-        self, *, idempotency_key: str, source: str, event_type: str,
+        self,
+        *,
+        idempotency_key: str,
+        source: str,
+        event_type: str,
     ) -> WebhookIdempotency:
         """首次插入；若已存在（重复 webhook）则返回 None，调用方应忽略。
 
@@ -177,16 +190,18 @@ class WebhookIdempotencyDAO:
 
     async def get(self, idempotency_key: str) -> WebhookIdempotency | None:
         result = await self._session.execute(
-            select(WebhookIdempotency).where(
-                WebhookIdempotency.idempotency_key == idempotency_key
-            )
+            select(WebhookIdempotency).where(WebhookIdempotency.idempotency_key == idempotency_key)
         )
         return result.scalar_one_or_none()
 
     async def mark_processed(
-        self, idempotency_key: str, *, error: str | None = None,
+        self,
+        idempotency_key: str,
+        *,
+        error: str | None = None,
     ) -> bool:
         from sqlalchemy import update as sa_update
+
         status = "failed" if error else "processed"
         result = await self._session.execute(
             sa_update(WebhookIdempotency)

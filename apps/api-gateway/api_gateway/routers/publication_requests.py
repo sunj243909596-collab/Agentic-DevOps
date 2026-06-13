@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
-from api_gateway.dependencies import get_db, require_auth
+from api_gateway.dependencies import require_auth
 from api_gateway.schemas.models import PublicationRequestIn, PublicationRequestOut
 
 router = APIRouter(prefix="/v1/publication-requests", tags=["publication-requests"])

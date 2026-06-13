@@ -31,7 +31,8 @@ Output rules:
 """
 
 
-AGENT_SYSTEM_PROMPT = """You are a senior code reviewer for a codebase. You have access
+AGENT_SYSTEM_PROMPT = (
+    """You are a senior code reviewer for a codebase. You have access
 to 9 read-only skills and produce a single JSON array of findings.
 
 # Process (per file)
@@ -82,7 +83,9 @@ Each finding includes:
       "rule:{rule_id}"                       (from lookup_rule)
       "linter:{file}:{rule_id}"              (from run_linter)
 
-""" + _FINDING_JSON_SPEC + """
+"""
+    + _FINDING_JSON_SPEC
+    + """
 
 # Hard rules
 
@@ -95,6 +98,7 @@ Each finding includes:
 - Report observations only — do not use prescriptive language telling the developer
   what to do.
 """
+)
 
 
 def build_agent_user_prompt(change_units: list, repository: str) -> str:
@@ -106,10 +110,12 @@ def build_agent_user_prompt(change_units: list, repository: str) -> str:
             f"  [{i}] {cu.file_path}  (+{cu.added_lines}/-{cu.deleted_lines}, "
             f"lang={cu.language}, risk={tags})"
         )
-    lines.extend([
-        "",
-        "Start by calling classify_change, then GetDiff on file [1]. After reviewing "
-        "all files, return a single JSON array containing findings from all files, "
-        "or [].",
-    ])
+    lines.extend(
+        [
+            "",
+            "Start by calling classify_change, then GetDiff on file [1]. After reviewing "
+            "all files, return a single JSON array containing findings from all files, "
+            "or [].",
+        ]
+    )
     return "\n".join(lines)

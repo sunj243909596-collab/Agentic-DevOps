@@ -1,4 +1,5 @@
 """ARQ pool dependency for FastAPI endpoints."""
+
 from __future__ import annotations
 
 from fastapi import Request

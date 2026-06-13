@@ -55,9 +55,7 @@ class MrReviewEventDAO:
             await self._session.rollback()
             return None
 
-    async def list_by_project(
-        self, project_id: int, *, limit: int = 100
-    ) -> list[MrReviewEvent]:
+    async def list_by_project(self, project_id: int, *, limit: int = 100) -> list[MrReviewEvent]:
         result = await self._session.execute(
             select(MrReviewEvent)
             .where(MrReviewEvent.project_id == project_id)

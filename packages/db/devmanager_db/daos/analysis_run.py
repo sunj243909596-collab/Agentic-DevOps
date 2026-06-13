@@ -89,9 +89,6 @@ class AnalysisRunDAO:
 
     async def list_recent(self, limit: int = 50, offset: int = 0) -> list[AnalysisRun]:
         result = await self._session.execute(
-            select(AnalysisRun)
-            .order_by(AnalysisRun.started_at.desc())
-            .limit(limit)
-            .offset(offset)
+            select(AnalysisRun).order_by(AnalysisRun.started_at.desc()).limit(limit).offset(offset)
         )
         return list(result.scalars().all())

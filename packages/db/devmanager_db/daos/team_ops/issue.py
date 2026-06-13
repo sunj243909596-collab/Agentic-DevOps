@@ -68,21 +68,15 @@ class IssueDAO:
         return row
 
     async def get_by_id(self, issue_id: uuid.UUID) -> Issue | None:
-        result = await self._session.execute(
-            select(Issue).where(Issue.issue_id == issue_id)
-        )
+        result = await self._session.execute(select(Issue).where(Issue.issue_id == issue_id))
         return result.scalar_one_or_none()
 
     async def get_by_pm_id(self, pm_issue_id: str) -> Issue | None:
-        result = await self._session.execute(
-            select(Issue).where(Issue.pm_issue_id == pm_issue_id)
-        )
+        result = await self._session.execute(select(Issue).where(Issue.pm_issue_id == pm_issue_id))
         return result.scalar_one_or_none()
 
     async def get_by_issue_key(self, issue_key: str) -> Issue | None:
-        result = await self._session.execute(
-            select(Issue).where(Issue.issue_key == issue_key)
-        )
+        result = await self._session.execute(select(Issue).where(Issue.issue_key == issue_key))
         return result.scalar_one_or_none()
 
     async def list_by_iteration(

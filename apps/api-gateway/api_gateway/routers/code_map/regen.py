@@ -11,6 +11,7 @@ graph is preserved, and the store is updated with ``stale=True``.
 The CLI always exits 0 so a failed regen does not block the developer's
 ``git pull``.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,9 +45,19 @@ MAX_TRANSIENT_RETRIES = 1  # 1 retry = 2 total attempts per scope
 # ── Error classification ─────────────────────────────────────────────────────
 
 _TRANSIENT_KEYWORDS = (
-    "timeout", "timed out", "connection", "reset by peer",
-    "temporarily", "503", "502", "500", "504", "unavailable",
-    "rate limit", "429", "overloaded",
+    "timeout",
+    "timed out",
+    "connection",
+    "reset by peer",
+    "temporarily",
+    "503",
+    "502",
+    "500",
+    "504",
+    "unavailable",
+    "rate limit",
+    "429",
+    "overloaded",
 )
 
 
@@ -70,10 +81,12 @@ def classify_error(exc: BaseException) -> str:
 
 # ── Public helpers (testable) ─────────────────────────────────────────────────
 
+
 def _get_changed_files(repo: str, prev_head: str, new_head: str) -> list[str]:
     out = subprocess.check_output(
         ["git", "diff", "--name-only", prev_head, new_head],
-        cwd=repo, text=True,
+        cwd=repo,
+        text=True,
     )
     return [line.strip() for line in out.splitlines() if line.strip()]
 
@@ -103,6 +116,7 @@ def _atomic_write_json(path: Path, payload: dict) -> None:
 
 # ── Per-scope regeneration ───────────────────────────────────────────────────
 
+
 def regen_one_scope(
     *,
     scope: str,
@@ -124,6 +138,7 @@ def regen_one_scope(
     """
     if sleep is None:
         import time as _time
+
         sleep = _time.sleep
 
     maps_dir = maps_dir or MAPS_DIR
@@ -139,8 +154,7 @@ def regen_one_scope(
                 generator=provider.name,
             )
             response = run_complete(
-                provider=provider,
-                messages=messages, max_tokens=8192, temperature=0.0, system=None
+                provider=provider, messages=messages, max_tokens=8192, temperature=0.0, system=None
             )
             # Parse LLM output — strip markdown fences if present
             text = response.content.strip()
@@ -151,10 +165,13 @@ def regen_one_scope(
                 text = text.strip().rstrip("`").strip()
             new_graph = ScopeGraph.model_validate_json(text)
             # Bump version
-            new_graph = new_graph.model_copy(update={
-                "version": (old_graph.version + 1) if old_graph else 1,
-                "stale": False, "stale_reason": None,
-            })
+            new_graph = new_graph.model_copy(
+                update={
+                    "version": (old_graph.version + 1) if old_graph else 1,
+                    "stale": False,
+                    "stale_reason": None,
+                }
+            )
 
             # Atomic write of the scope graph
             _atomic_write_json(
@@ -166,11 +183,18 @@ def regen_one_scope(
             (maps_dir / scope).mkdir(parents=True, exist_ok=True)
             for m in new_graph.modules:
                 card = ModuleCard(
-                    scope=scope, module_id=m.id, version=new_graph.version,
-                    generated_at=new_graph.generated_at, head_sha=new_graph.head_sha,
+                    scope=scope,
+                    module_id=m.id,
+                    version=new_graph.version,
+                    generated_at=new_graph.generated_at,
+                    head_sha=new_graph.head_sha,
                     responsibility=m.responsibility,
-                    interfaces={"exports": [], "imports": m.entry_points,
-                                "consumes_api": [], "key_files": m.key_files},
+                    interfaces={
+                        "exports": [],
+                        "imports": m.entry_points,
+                        "consumes_api": [],
+                        "key_files": m.key_files,
+                    },
                     key_files=m.key_files,
                 )
                 _atomic_write_json(
@@ -191,7 +215,11 @@ def regen_one_scope(
             if kind == "transient" and attempt < max_attempts - 1:
                 log.warning(
                     "regen %s transient failure (attempt %d/%d): %s — retrying in %ds",
-                    scope, attempt + 1, max_attempts, exc, TRANSIENT_RETRY_DELAY_SEC,
+                    scope,
+                    attempt + 1,
+                    max_attempts,
+                    exc,
+                    TRANSIENT_RETRY_DELAY_SEC,
                 )
                 sleep(TRANSIENT_RETRY_DELAY_SEC)
                 continue
@@ -206,10 +234,15 @@ def regen_one_scope(
     else:
         # No prior graph — write a placeholder so the UI doesn't crash
         placeholder = ScopeGraph(
-            scope=scope, version=0,
+            scope=scope,
+            version=0,
             generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
-            head_sha=head_sha, generator=provider.name,
-            modules=[], edges=[], stale=True, stale_reason=str(last_exc),
+            head_sha=head_sha,
+            generator=provider.name,
+            modules=[],
+            edges=[],
+            stale=True,
+            stale_reason=str(last_exc),
         )
         store.put(scope, placeholder, stale=True, stale_reason=str(last_exc))
 
@@ -223,8 +256,10 @@ def _update_index(maps_dir: Path, scope: str, graph: ScopeGraph) -> None:
     idx.generated_at = datetime.now(UTC).isoformat(timespec="seconds")
     idx.last_pull_at = idx.generated_at
     idx.scopes[scope] = {
-        "version": graph.version, "head_sha": graph.head_sha,
-        "stale": graph.stale, "stale_reason": graph.stale_reason,
+        "version": graph.version,
+        "head_sha": graph.head_sha,
+        "stale": graph.stale,
+        "stale_reason": graph.stale_reason,
         "module_count": len(graph.modules),
     }
     _atomic_write_json(idx_path, json.loads(idx.model_dump_json(exclude_none=True)))
@@ -232,15 +267,20 @@ def _update_index(maps_dir: Path, scope: str, graph: ScopeGraph) -> None:
 
 # ── CLI entrypoint ───────────────────────────────────────────────────────────
 
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Regenerate code map from git state")
     parser.add_argument("--prev-head", help="HEAD sha before pull（增量模式必填）")
     parser.add_argument("--new-head", help="HEAD sha after pull（增量模式必填）")
     parser.add_argument("--maps-dir", default=str(MAPS_DIR))
-    parser.add_argument("--store-uri", default=os.getenv("CODE_MAP_STORE_URI", "memory"),
-                        help="memory | redis://... (only memory implemented in v1)")
-    parser.add_argument("--force-full", action="store_true",
-                        help="忽略 git diff，对所有顶层目录全量重生")
+    parser.add_argument(
+        "--store-uri",
+        default=os.getenv("CODE_MAP_STORE_URI", "memory"),
+        help="memory | redis://... (only memory implemented in v1)",
+    )
+    parser.add_argument(
+        "--force-full", action="store_true", help="忽略 git diff，对所有顶层目录全量重生"
+    )
     parser.add_argument("--scope", help="只重生指定 scope（可与 --force-full 配合，也可单独使用）")
     args = parser.parse_args(argv)
 
@@ -251,8 +291,17 @@ def main(argv: list[str] | None = None) -> int:
         by_scope = {args.scope: set()}
     elif args.force_full:
         # All top-level dirs (excluding special ones)
-        skip = {".git", ".claude", "node_modules", "dist", ".venv",
-                ".pytest_cache", ".logs", ".pids", "__pycache__"}
+        skip = {
+            ".git",
+            ".claude",
+            "node_modules",
+            "dist",
+            ".venv",
+            ".pytest_cache",
+            ".logs",
+            ".pids",
+            "__pycache__",
+        }
         by_scope = {
             d.name: set()
             for d in REPO_ROOT.iterdir()
@@ -262,8 +311,7 @@ def main(argv: list[str] | None = None) -> int:
         # Incremental mode: require --prev-head/--new-head
         if not (args.prev_head and args.new_head):
             parser.error(
-                "--prev-head 和 --new-head 在增量模式下必填；"
-                "或使用 --force-full / --scope"
+                "--prev-head 和 --new-head 在增量模式下必填；或使用 --force-full / --scope"
             )
         files = _get_changed_files(str(REPO_ROOT), args.prev_head, args.new_head)
         if not files:
@@ -275,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
     # Provider init
     try:
         from devmanager_llm import make_provider
+
         name = os.getenv("LLM_PROVIDER", "mock")
         api_key = os.getenv("LLM_API_KEY", "")
         model = os.getenv("LLM_MODEL")
@@ -288,7 +337,10 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         _write_fallback_index(
-            maps_dir, list(by_scope), reason, args.new_head or "HEAD",
+            maps_dir,
+            list(by_scope),
+            reason,
+            args.new_head or "HEAD",
         )
         return 0
 
@@ -306,15 +358,23 @@ def main(argv: list[str] | None = None) -> int:
             changed_files = sorted(changed)
         try:
             regen_one_scope(
-                scope=scope, old_graph=old, changed_files=changed_files,
-                file_tree=tree, head_sha=args.new_head or "HEAD",
-                provider=provider, store=store, maps_dir=maps_dir,
+                scope=scope,
+                old_graph=old,
+                changed_files=changed_files,
+                file_tree=tree,
+                head_sha=args.new_head or "HEAD",
+                provider=provider,
+                store=store,
+                maps_dir=maps_dir,
             )
         except LLMAuthError as exc:
             # Mid-loop credential failure: don't burn timeouts on the rest
             log.warning("LLM auth failed mid-loop: %s", exc)
             _write_fallback_index(
-                maps_dir, list(by_scope), "LLM 未配置", args.new_head or "HEAD",
+                maps_dir,
+                list(by_scope),
+                "LLM 未配置",
+                args.new_head or "HEAD",
             )
             return 0
 
@@ -354,8 +414,10 @@ def _write_fallback_index(maps_dir: Path, scopes: list[str], reason: str, head_s
     )
     for s in scopes:
         idx.scopes[s] = {
-            "version": 0, "head_sha": head_sha,
-            "stale": True, "stale_reason": reason,
+            "version": 0,
+            "head_sha": head_sha,
+            "stale": True,
+            "stale_reason": reason,
             "module_count": 0,
         }
     _atomic_write_json(maps_dir / "index.json", json.loads(idx.model_dump_json(exclude_none=True)))

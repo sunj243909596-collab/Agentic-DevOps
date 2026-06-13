@@ -13,6 +13,7 @@ Adding a new provider is a 3-step change:
   2. Register it: `PROVIDERS["openai"] = OpenAIProvider`
   3. Set `llm_provider=openai` in the settings table
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -27,9 +28,10 @@ log = logging.getLogger(__name__)
 
 # ── Public types ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class LLMMessage:
-    role: str       # "system" | "user" | "assistant"
+    role: str  # "system" | "user" | "assistant"
     content: str
 
 
@@ -83,6 +85,7 @@ def run_complete(
 
 
 # ── Claude provider ──────────────────────────────────────────────────────────
+
 
 class ClaudeProvider:
     name = "claude"
@@ -140,8 +143,7 @@ class ClaudeProvider:
             "max_tokens": max_tokens,
             "temperature": temperature,
             "messages": [
-                {"role": m.role, "content": m.content}
-                for m in messages if m.role != "system"
+                {"role": m.role, "content": m.content} for m in messages if m.role != "system"
             ],
         }
         if tools:
@@ -155,14 +157,16 @@ class ClaudeProvider:
         text = "".join(block.text for block in r.content if getattr(block, "type", "") == "text")
         tool_uses = [
             {"id": b.id, "name": b.name, "input": b.input}
-            for b in r.content if getattr(b, "type", "") == "tool_use"
+            for b in r.content
+            if getattr(b, "type", "") == "tool_use"
         ]
         return LLMResponse(
             content=text,
             model=r.model,
             usage=(
                 {"input": r.usage.input_tokens, "output": r.usage.output_tokens}
-                if r.usage else None
+                if r.usage
+                else None
             ),
             raw=r,
             tool_uses=tool_uses,
@@ -171,6 +175,7 @@ class ClaudeProvider:
 
 
 # ── Mock provider (no API needed; for demos + local dev) ────────────────────
+
 
 class MockProvider:
     """Returns a canned response. Default scenario is `findings` (review-agent
@@ -259,7 +264,7 @@ def _build_codemap_mock(messages: list[LLMMessage]) -> str:
 
 PROVIDERS: dict[str, type[LLMProvider]] = {
     "claude": ClaudeProvider,
-    "mock":   MockProvider,
+    "mock": MockProvider,
 }
 
 
@@ -284,9 +289,7 @@ def make_provider(
     """
     cls = PROVIDERS.get(name)
     if cls is None:
-        raise LLMAuthError(
-            f"unknown LLM provider: {name!r}. Available: {list(PROVIDERS)}"
-        )
+        raise LLMAuthError(f"unknown LLM provider: {name!r}. Available: {list(PROVIDERS)}")
     if name == "claude":
         resolved_model: str
         if model:

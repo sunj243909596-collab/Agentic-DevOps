@@ -38,9 +38,7 @@ class PersonDAO:
         return person
 
     async def get_by_id(self, person_id: uuid.UUID) -> Person | None:
-        result = await self._session.execute(
-            select(Person).where(Person.person_id == person_id)
-        )
+        result = await self._session.execute(select(Person).where(Person.person_id == person_id))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Person | None:
@@ -58,9 +56,7 @@ class PersonDAO:
         return await self.list_by_status("active")
 
     async def list_all(self) -> list[Person]:
-        result = await self._session.execute(
-            select(Person).order_by(Person.display_name)
-        )
+        result = await self._session.execute(select(Person).order_by(Person.display_name))
         return list(result.scalars().all())
 
     async def update(
@@ -88,7 +84,5 @@ class PersonDAO:
         )
 
     async def delete(self, person_id: uuid.UUID) -> bool:
-        result = await self._session.execute(
-            sa_delete(Person).where(Person.person_id == person_id)
-        )
+        result = await self._session.execute(sa_delete(Person).where(Person.person_id == person_id))
         return (result.rowcount or 0) > 0

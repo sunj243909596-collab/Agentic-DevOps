@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
 
 from devmanager_db.daos.analysis_run import AnalysisRunDAO
 from devmanager_db.daos.audit_event import AuditEventDAO
 from devmanager_db.daos.finding import FindingDAO
 from devmanager_db.daos.score import ScoreDAO
 from devmanager_db.models import Score
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from devmanager_scoring.engine import compute_score
 
 _SCORING_VERSION = os.getenv("SCORING_VERSION", "v1")
@@ -66,7 +66,7 @@ async def score_run(run_id: uuid.UUID, db: AsyncSession) -> Score:
             actor="system",
             workflow_id=run_id,
             event_type="run.scored",
-            event_timestamp=datetime.now(timezone.utc),
+            event_timestamp=datetime.now(UTC),
             metadata={
                 "score_id": str(score.score_id),
                 "final_score": result.final_score,

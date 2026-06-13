@@ -1,4 +1,5 @@
 """S4 P4 — WorkloadSnapshotDAO。"""
+
 from __future__ import annotations
 
 import uuid
@@ -29,30 +30,36 @@ class WorkloadSnapshotDAO:
         estimate_hours_completed: float,
     ) -> None:
         """按 (person_id, time_window) 幂等 upsert，computed_at = now(UTC)。"""
-        stmt = pg_insert(WorkloadSnapshot).values(
-            person_id=person_id,
-            time_window=time_window,
-            open_issues=open_issues,
-            in_progress_issues=in_progress_issues,
-            completed_issues=completed_issues,
-            estimate_hours_remaining=estimate_hours_remaining,
-            estimate_hours_completed=estimate_hours_completed,
-            computed_at=datetime.now(UTC),
-        ).on_conflict_do_update(
-            index_elements=["person_id", "time_window"],
-            set_={
-                "open_issues": open_issues,
-                "in_progress_issues": in_progress_issues,
-                "completed_issues": completed_issues,
-                "estimate_hours_remaining": estimate_hours_remaining,
-                "estimate_hours_completed": estimate_hours_completed,
-                "computed_at": datetime.now(UTC),
-            },
+        stmt = (
+            pg_insert(WorkloadSnapshot)
+            .values(
+                person_id=person_id,
+                time_window=time_window,
+                open_issues=open_issues,
+                in_progress_issues=in_progress_issues,
+                completed_issues=completed_issues,
+                estimate_hours_remaining=estimate_hours_remaining,
+                estimate_hours_completed=estimate_hours_completed,
+                computed_at=datetime.now(UTC),
+            )
+            .on_conflict_do_update(
+                index_elements=["person_id", "time_window"],
+                set_={
+                    "open_issues": open_issues,
+                    "in_progress_issues": in_progress_issues,
+                    "completed_issues": completed_issues,
+                    "estimate_hours_remaining": estimate_hours_remaining,
+                    "estimate_hours_completed": estimate_hours_completed,
+                    "computed_at": datetime.now(UTC),
+                },
+            )
         )
         await self._session.execute(stmt)
 
     async def get(
-        self, person_id: uuid.UUID, time_window: str,
+        self,
+        person_id: uuid.UUID,
+        time_window: str,
     ) -> WorkloadSnapshot | None:
         result = await self._session.execute(
             select(WorkloadSnapshot).where(

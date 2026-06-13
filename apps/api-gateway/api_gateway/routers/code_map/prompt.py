@@ -8,6 +8,7 @@ Sends a single user message containing:
 The LLM is asked to return ONLY a JSON object matching ScopeGraph schema
 (no markdown, no prose).
 """
+
 from __future__ import annotations
 
 import json
@@ -81,7 +82,7 @@ generator = {generator}
 {old_dump}
 
 # 本次变更文件（{len(files)} 个）
-{chr(10).join(files) if files else '（无变更 — 仍请重新审视整张图）'}
+{chr(10).join(files) if files else "（无变更 — 仍请重新审视整张图）"}
 
 # 当前目录 tree
 {tree_section}

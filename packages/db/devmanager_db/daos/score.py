@@ -45,7 +45,5 @@ class ScoreDAO:
         return score
 
     async def get_by_run(self, run_id: uuid.UUID) -> Score | None:
-        result = await self._session.execute(
-            select(Score).where(Score.run_id == run_id)
-        )
+        result = await self._session.execute(select(Score).where(Score.run_id == run_id))
         return result.scalar_one_or_none()

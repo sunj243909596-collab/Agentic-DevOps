@@ -76,9 +76,7 @@ evals/
 # ── Product / development design documents ──────────────────────────────────
 docs/
 
-# ── Tests (not uploaded) ────────────────────────────────────────────────────
-tests/
-**/tests/
+# ── Frontend tests (Vitest) ─────────────────────────────────────────────────
 **/__tests__/
 *.test.*
 *.spec.*

@@ -32,9 +32,7 @@ async def extract_hunk(
     """
     loop = asyncio.get_event_loop()
     try:
-        patch = await loop.run_in_executor(
-            None, _diff_file, repo_dir, from_ref, to_ref, file_path
-        )
+        patch = await loop.run_in_executor(None, _diff_file, repo_dir, from_ref, to_ref, file_path)
     except GitError:
         return None
 

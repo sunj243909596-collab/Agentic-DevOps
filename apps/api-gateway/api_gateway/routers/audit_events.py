@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import uuid
 
+from devmanager_db.models import AuditEvent
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db, require_auth
 from api_gateway.schemas.models import AuditEventResponse
-from devmanager_db.models import AuditEvent
 
 router = APIRouter(prefix="/v1/audit-events", tags=["audit-events"])
 

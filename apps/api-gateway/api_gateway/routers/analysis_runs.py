@@ -213,9 +213,7 @@ async def retry_analysis_run(
     run_dao = AnalysisRunDAO(db)
     original = await run_dao.get_by_id(run_id)
     if original is None:
-        raise HTTPException(
-            status_code=404, detail=f"Analysis run {run_id} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Analysis run {run_id} not found")
     if original.status not in RETRYABLE_STATUSES:
         raise HTTPException(
             status_code=409,
@@ -267,9 +265,7 @@ async def retry_analysis_run(
             # If we can't enqueue, roll back so the caller can retry cleanly.
             # The new run row never existed as far as the queue is concerned.
             await db.rollback()
-            raise HTTPException(
-                status_code=503, detail=f"Task queue unavailable: {exc}"
-            )
+            raise HTTPException(status_code=503, detail=f"Task queue unavailable: {exc}")
 
     return AnalysisRunResponse.model_validate(new_run)
 

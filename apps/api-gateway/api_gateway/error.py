@@ -18,8 +18,12 @@ def error_body(code: str, message: str) -> dict:
     }
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    msg = "; ".join(f"{'.'.join(str(l) for l in e['loc'])}: {e['msg']}" for e in exc.errors())
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    msg = "; ".join(
+        f"{'.'.join(str(part) for part in err['loc'])}: {err['msg']}" for err in exc.errors()
+    )
     return JSONResponse(status_code=422, content=error_body("VALIDATION_ERROR", msg))
 
 

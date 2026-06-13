@@ -58,13 +58,9 @@ class ChangeUnitDAO:
             if not set_vals:
                 continue
             await self._session.execute(
-                sa_update(ChangeUnit)
-                .where(ChangeUnit.change_unit_id == cu_id)
-                .values(**set_vals)
+                sa_update(ChangeUnit).where(ChangeUnit.change_unit_id == cu_id).values(**set_vals)
             )
 
     async def list_by_run(self, run_id: uuid.UUID) -> list[ChangeUnit]:
-        result = await self._session.execute(
-            select(ChangeUnit).where(ChangeUnit.run_id == run_id)
-        )
+        result = await self._session.execute(select(ChangeUnit).where(ChangeUnit.run_id == run_id))
         return list(result.scalars().all())

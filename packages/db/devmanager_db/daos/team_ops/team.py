@@ -57,12 +57,8 @@ class TeamDAO:
             values["description"] = None
         if len(values) == 1:
             return
-        await self._session.execute(
-            sa_update(Team).where(Team.team_id == team_id).values(**values)
-        )
+        await self._session.execute(sa_update(Team).where(Team.team_id == team_id).values(**values))
 
     async def delete(self, team_id: uuid.UUID) -> bool:
-        result = await self._session.execute(
-            sa_delete(Team).where(Team.team_id == team_id)
-        )
+        result = await self._session.execute(sa_delete(Team).where(Team.team_id == team_id))
         return (result.rowcount or 0) > 0

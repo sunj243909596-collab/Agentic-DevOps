@@ -35,7 +35,5 @@ class ReportDAO:
         return report
 
     async def get_by_run(self, run_id: uuid.UUID) -> Report | None:
-        result = await self._session.execute(
-            select(Report).where(Report.run_id == run_id)
-        )
+        result = await self._session.execute(select(Report).where(Report.run_id == run_id))
         return result.scalar_one_or_none()

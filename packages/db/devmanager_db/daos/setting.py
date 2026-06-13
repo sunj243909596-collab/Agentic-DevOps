@@ -24,9 +24,7 @@ class SettingDAO:
         s = await self.get(key)
         return s.value if s else default
 
-    async def set_value(
-        self, key: str, value: str, updated_by: str | None = None
-    ) -> Setting:
+    async def set_value(self, key: str, value: str, updated_by: str | None = None) -> Setting:
         existing = await self.get(key)
         now = datetime.now(UTC)
         if existing is None:

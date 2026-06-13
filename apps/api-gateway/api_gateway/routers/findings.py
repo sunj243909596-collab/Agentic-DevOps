@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from devmanager_db.daos.finding import FindingDAO
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db, require_auth
 from api_gateway.schemas.models import FindingResponse, FindingStatusUpdateIn
-from devmanager_db.daos.finding import FindingDAO
 
 router = APIRouter(prefix="/v1/findings", tags=["findings"])
 

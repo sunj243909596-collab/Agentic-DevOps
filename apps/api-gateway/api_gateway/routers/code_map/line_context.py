@@ -3,6 +3,7 @@
 Used by the /line-context endpoint and the Changes tab to label each
 changed file with its owning module card.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -10,9 +11,7 @@ from typing import Any
 from .schema import ScopeGraph
 
 
-def find_module_for_file(
-    file_path: str, scope_graphs: list[ScopeGraph]
-) -> dict[str, Any] | None:
+def find_module_for_file(file_path: str, scope_graphs: list[ScopeGraph]) -> dict[str, Any] | None:
     """Return the module whose `path` is the longest strict prefix of `file_path`.
 
     Strict means: file_path must be `module.path + "/" + ...`, so that
@@ -26,10 +25,13 @@ def find_module_for_file(
             prefix = m.path + "/"
             if file_path.startswith(prefix) or file_path == m.path:
                 if best is None or len(m.path) > best[0]:
-                    best = (len(m.path), {
-                        "module_id": m.id,
-                        "scope": graph.scope,
-                        "responsibility": m.responsibility,
-                        "kind": m.kind,
-                    })
+                    best = (
+                        len(m.path),
+                        {
+                            "module_id": m.id,
+                            "scope": graph.scope,
+                            "responsibility": m.responsibility,
+                            "kind": m.kind,
+                        },
+                    )
     return best[1] if best else None

@@ -14,6 +14,7 @@ Events ignored (no run created, returns 202 with message):
   • pull_request actions other than opened / synchronize / reopened
   • any event type not in {push, pull_request}
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -21,16 +22,15 @@ import hmac
 import json
 import logging
 import os
-import uuid
 
+from devmanager_db.daos.analysis_run import AnalysisRunDAO
+from devmanager_db.daos.repository import RepositoryDAO
+from devmanager_db.models import AnalysisRun
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db
 from api_gateway.queue import get_arq_pool
-from devmanager_db.daos.analysis_run import AnalysisRunDAO
-from devmanager_db.daos.repository import RepositoryDAO
-from devmanager_db.models import AnalysisRun
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +55,7 @@ def _verify_signature(body: bytes, signature: str | None) -> None:
         return  # no secret configured — skip verification
     if signature is None:
         raise HTTPException(status_code=403, detail="Missing X-Hub-Signature-256 header")
-    expected = "sha256=" + hmac.new(
-        secret.encode(), body, hashlib.sha256
-    ).hexdigest()
+    expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(signature, expected):
         raise HTTPException(status_code=403, detail="Invalid webhook signature")
 

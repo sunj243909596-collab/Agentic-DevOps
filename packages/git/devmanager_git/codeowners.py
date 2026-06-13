@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import fnmatch
-import re
 from pathlib import Path, PurePosixPath
 
 
@@ -16,7 +15,7 @@ class CodeownersParser:
         self._rules = rules
 
     @classmethod
-    def from_text(cls, text: str) -> "CodeownersParser":
+    def from_text(cls, text: str) -> CodeownersParser:
         rules: list[tuple[str, str]] = []
         for line in text.splitlines():
             line = line.strip()
@@ -31,7 +30,7 @@ class CodeownersParser:
         return cls(rules)
 
     @classmethod
-    def from_repo(cls, repo_dir: Path) -> "CodeownersParser | None":
+    def from_repo(cls, repo_dir: Path) -> CodeownersParser | None:
         candidates = [
             repo_dir / "CODEOWNERS",
             repo_dir / ".github" / "CODEOWNERS",
@@ -44,9 +43,10 @@ class CodeownersParser:
         return None
 
     @classmethod
-    def from_bare_repo(cls, repo_dir: Path) -> "CodeownersParser | None":
+    def from_bare_repo(cls, repo_dir: Path) -> CodeownersParser | None:
         """Read CODEOWNERS from a bare/mirror git repo using git show."""
         import subprocess
+
         for ref_path in ["HEAD:CODEOWNERS", "HEAD:.github/CODEOWNERS", "HEAD:docs/CODEOWNERS"]:
             result = subprocess.run(
                 ["git", "show", ref_path],

@@ -36,9 +36,7 @@ class TeamMembershipDAO:
         await self._session.flush()
         return m
 
-    async def get(
-        self, team_id: uuid.UUID, person_id: uuid.UUID
-    ) -> TeamMembership | None:
+    async def get(self, team_id: uuid.UUID, person_id: uuid.UUID) -> TeamMembership | None:
         result = await self._session.execute(
             select(TeamMembership).where(
                 TeamMembership.team_id == team_id,
@@ -65,9 +63,7 @@ class TeamMembershipDAO:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update_role(
-        self, team_id: uuid.UUID, person_id: uuid.UUID, *, role: str
-    ) -> None:
+    async def update_role(self, team_id: uuid.UUID, person_id: uuid.UUID, *, role: str) -> None:
         await self._session.execute(
             sa_update(TeamMembership)
             .where(

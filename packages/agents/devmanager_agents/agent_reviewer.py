@@ -107,11 +107,13 @@ class AgentReviewer:
                         tu.get("input") or {},
                         ctx,
                     )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tu["id"],
-                        "content": output[:8000],
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tu["id"],
+                            "content": output[:8000],
+                        }
+                    )
                     if audit_dao is not None and workflow_id is not None:
                         try:
                             await audit_dao.append(
@@ -124,12 +126,14 @@ class AgentReviewer:
                         except Exception as exc:
                             log.warning("audit tool_call failed: %s", exc)
                 except Exception as exc:
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tu["id"],
-                        "content": f"(tool error: {exc})",
-                        "is_error": True,
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tu["id"],
+                            "content": f"(tool error: {exc})",
+                            "is_error": True,
+                        }
+                    )
             messages.append({"role": "user", "content": json.dumps(tool_results)})
         raise AgentLoopMaxIter()
 

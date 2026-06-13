@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import uuid
 
+from devmanager_scoring.service import AlreadyScoredError, ScoreError, score_run
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_gateway.dependencies import get_db, require_auth
-from devmanager_scoring.service import AlreadyScoredError, ScoreError, score_run
 
 router = APIRouter(prefix="/v1/analysis-runs", tags=["score"])
 

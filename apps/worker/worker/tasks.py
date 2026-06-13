@@ -5,6 +5,7 @@ Each task receives an ARQ context dict containing:
   ctx["make_session"]  — async_sessionmaker (created by on_startup)
   ctx["engine"]        — AsyncEngine (disposed by on_shutdown)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -45,12 +46,12 @@ async def _load_llm_provider(db):
     Returns None if the configured provider requires credentials that are
     missing (e.g. claude with no key) — caller should skip agent review.
     """
-    from devmanager_llm import make_provider, LLMAuthError
+    from devmanager_llm import LLMAuthError, make_provider
 
     dao = SettingDAO(db)
-    name    = (await dao.get("llm_provider"))  or None
-    api_key = (await dao.get("llm_api_key"))   or None
-    model   = (await dao.get("llm_model"))     or None
+    name = (await dao.get("llm_provider")) or None
+    api_key = (await dao.get("llm_api_key")) or None
+    model = (await dao.get("llm_model")) or None
     base_url = (await dao.get("llm_base_url")) or None
 
     if not name:
@@ -73,7 +74,9 @@ async def _load_llm_provider(db):
         return None
     log.info(
         "LLM provider ready: name=%s model=%s base_url=%s",
-        provider.name, model_v or "(default)", base_url_v or "(default)",
+        provider.name,
+        model_v or "(default)",
+        base_url_v or "(default)",
     )
     return provider
 
@@ -109,6 +112,7 @@ async def full_pipeline(
             provider = await _load_llm_provider(db)
             if provider is not None:
                 from devmanager_agents.service import review_run
+
                 run = await AnalysisRunDAO(db).get_by_id(run_id)
                 repo_dir = _resolve_repo_dir(run.repository_id)
                 try:

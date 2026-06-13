@@ -3,6 +3,7 @@
 Holds the current ScopeGraph for each scope plus a per-scope stale_streak
 counter that powers the UI "最近 N 次未重生成功" yellow banner.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -34,10 +35,12 @@ class CodeMapStore:
         with self._lock:
             if stale:
                 # Caller provided their own stale flag → use it
-                graph = graph.model_copy(update={
-                    "stale": True,
-                    "stale_reason": stale_reason or "unknown",
-                })
+                graph = graph.model_copy(
+                    update={
+                        "stale": True,
+                        "stale_reason": stale_reason or "unknown",
+                    }
+                )
                 self._stale_streak[scope] = self._stale_streak.get(scope, 0) + 1
             else:
                 graph = graph.model_copy(update={"stale": False, "stale_reason": None})

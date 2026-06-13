@@ -36,9 +36,7 @@ class GitlabIdentityDAO:
         await self._session.flush()
         return row
 
-    async def get_active_by_user_id(
-        self, gitlab_user_id: int
-    ) -> GitlabIdentity | None:
+    async def get_active_by_user_id(self, gitlab_user_id: int) -> GitlabIdentity | None:
         result = await self._session.execute(
             select(GitlabIdentity).where(
                 GitlabIdentity.gitlab_user_id == gitlab_user_id,
@@ -47,9 +45,7 @@ class GitlabIdentityDAO:
         )
         return result.scalar_one_or_none()
 
-    async def list_active_by_person(
-        self, person_id: uuid.UUID
-    ) -> list[GitlabIdentity]:
+    async def list_active_by_person(self, person_id: uuid.UUID) -> list[GitlabIdentity]:
         result = await self._session.execute(
             select(GitlabIdentity)
             .where(
@@ -60,9 +56,7 @@ class GitlabIdentityDAO:
         )
         return list(result.scalars().all())
 
-    async def list_history_by_person(
-        self, person_id: uuid.UUID
-    ) -> list[GitlabIdentity]:
+    async def list_history_by_person(self, person_id: uuid.UUID) -> list[GitlabIdentity]:
         """All rows (active + deactivated) for audit history."""
         result = await self._session.execute(
             select(GitlabIdentity)

@@ -32,10 +32,12 @@ def _cache_key(file_path: str, diff_sha: str) -> str:
 
 async def _classify_handler(args: dict, ctx: SkillContext) -> str:
     if ctx.provider is None:
-        return json.dumps({
-            "type": "other",
-            "focus_dimensions": ["correctness"],
-        })
+        return json.dumps(
+            {
+                "type": "other",
+                "focus_dimensions": ["correctness"],
+            }
+        )
     file_path = args["file_path"]
     diff_sha = args.get(
         "diff_sha",

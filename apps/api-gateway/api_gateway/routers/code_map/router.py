@@ -10,6 +10,7 @@ Endpoints (all under /v1/code-map):
   POST /regen                  → kick off a background regen job
   GET  /regen/{run_id}         → poll regen job status
 """
+
 from __future__ import annotations
 
 import json
@@ -52,6 +53,7 @@ _jobs_lock = threading.Lock()
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
+
 # Allow letters, digits, underscores, slashes, dots, hyphens — but no `..`
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_./-]+$")
 _HEX_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -83,6 +85,7 @@ def set_store(s: CodeMapStore) -> None:
 
 # ── / ────────────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=dict)
 async def get_index() -> dict:
     return _store.status()
@@ -92,6 +95,7 @@ async def get_index() -> dict:
 # route, otherwise FastAPI matches `/line-context` as scope="line-context".
 
 # ── /line-context ────────────────────────────────────────────────────────────
+
 
 @router.get("/line-context", response_model=dict)
 async def line_context(file: str = Query(...)) -> dict:
@@ -105,6 +109,7 @@ async def line_context(file: str = Query(...)) -> dict:
 
 # ── /changes ─────────────────────────────────────────────────────────────────
 
+
 @router.get("/changes", response_model=dict)
 async def get_changes(since: str = Query(...)) -> dict:
     """Return commits and changed files between `since` and HEAD, each file
@@ -114,7 +119,9 @@ async def get_changes(since: str = Query(...)) -> dict:
     try:
         log_out = subprocess.check_output(
             ["git", "log", since, "..HEAD", "--name-status", "--pretty=format:%H%x09%s"],
-            cwd=str(repo_root), text=True, stderr=subprocess.DEVNULL,
+            cwd=str(repo_root),
+            text=True,
+            stderr=subprocess.DEVNULL,
         )
     except Exception as exc:
         log.warning("git log failed (%s); returning empty changes", exc)
@@ -133,21 +140,20 @@ async def get_changes(since: str = Query(...)) -> dict:
                 status, path = parts[0], parts[1]
                 # Best-effort file lookup; skip pathological paths.
                 safe_path = not any(seg == ".." for seg in path.split("/"))
-                ctx = (
-                    find_module_for_file(path, _store.all_graphs())
-                    if safe_path
-                    else None
+                ctx = find_module_for_file(path, _store.all_graphs()) if safe_path else None
+                files.append(
+                    {
+                        "commit": current["sha"],
+                        "path": path,
+                        "status": status,
+                        "module": ctx,
+                    }
                 )
-                files.append({
-                    "commit": current["sha"],
-                    "path": path,
-                    "status": status,
-                    "module": ctx,
-                })
     return {"commits": commits, "files": files}
 
 
 # ── /{scope} ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/{scope}", response_model=dict)
 async def get_scope(scope: str) -> dict:
@@ -159,6 +165,7 @@ async def get_scope(scope: str) -> dict:
 
 
 # ── /{scope}/diff ────────────────────────────────────────────────────────────
+
 
 @router.get("/{scope}/diff", response_model=dict)
 async def get_diff(
@@ -189,7 +196,9 @@ async def get_diff(
     try:
         a_text = subprocess.check_output(
             ["git", "show", f"HEAD:docs/code-map/{scope}.json"],
-            cwd=str(repo_root), text=True, stderr=subprocess.DEVNULL,
+            cwd=str(repo_root),
+            text=True,
+            stderr=subprocess.DEVNULL,
         )
     except Exception:
         a_text = a_path.read_text(encoding="utf-8")
@@ -201,6 +210,7 @@ async def get_diff(
 
 
 # ── /{scope}/module/{module_id} ──────────────────────────────────────────────
+
 
 @router.get("/{scope}/module/{module_id:path}", response_model=dict)
 async def get_module(scope: str, module_id: str) -> dict:
@@ -267,9 +277,7 @@ class _RepullRegenRequest(BaseModel):
 
 
 @router.post("/repull-regen", status_code=202, response_model=dict)
-async def post_repull_regen(
-    body: _RepullRegenRequest, background_tasks: BackgroundTasks
-) -> dict:
+async def post_repull_regen(body: _RepullRegenRequest, background_tasks: BackgroundTasks) -> dict:
     """`git pull` + regen. Two phases: (1) git pull in the repo root, then
     (2) regen the affected scopes. If phase 1 fails, phase 2 is skipped
     and the run is marked `failed` with `pull_result.error` populated —
@@ -285,9 +293,7 @@ async def post_repull_regen(
         job = _new_job(body.scope, body.force_full)
         job["run_id"] = run_id
         _jobs[run_id] = job
-    background_tasks.add_task(
-        _run_repull_regen_job, run_id, body.scope, body.force_full
-    )
+    background_tasks.add_task(_run_repull_regen_job, run_id, body.scope, body.force_full)
     return {"run_id": run_id, "status": "queued"}
 
 
@@ -339,9 +345,7 @@ def _run_regen_job(run_id: str, scope: str | None, force_full: bool) -> None:
             _jobs[run_id]["finished_at"] = _now_iso()
 
 
-def _run_repull_regen_job(
-    run_id: str, scope: str | None, force_full: bool
-) -> None:
+def _run_repull_regen_job(run_id: str, scope: str | None, force_full: bool) -> None:
     """Background worker for /repull-regen. Two phases:
     1. `git pull` (60s timeout). On any failure → mark whole run failed
        and SKIP phase 2. pull_result captures prev/new HEAD and error.
@@ -441,8 +445,11 @@ def _run_repull_regen_job(
 
 
 def _do_regen_phase(
-    run_id: str, scope: str | None, force_full: bool,
-    prev_head: str, new_head: str,
+    run_id: str,
+    scope: str | None,
+    force_full: bool,
+    prev_head: str,
+    new_head: str,
 ) -> None:
     """Shared core of /regen and /repull-regen: decide scopes, build
     provider, call regen_one_scope for each (which itself retries once
@@ -462,10 +469,20 @@ def _do_regen_phase(
         # on a tab where the scope picker is not visible). Explicit
         # `force_full=False` is honoured — the regen walks all dirs
         # anyway, so the cost is the same.
-        skip = {".git", ".claude", "node_modules", "dist", ".venv",
-                ".pytest_cache", ".logs", ".pids", "__pycache__"}
+        skip = {
+            ".git",
+            ".claude",
+            "node_modules",
+            "dist",
+            ".venv",
+            ".pytest_cache",
+            ".logs",
+            ".pids",
+            "__pycache__",
+        }
         scopes_to_run = [
-            d.name for d in REPO_ROOT.iterdir()
+            d.name
+            for d in REPO_ROOT.iterdir()
             if d.is_dir() and d.name not in skip and not d.name.startswith(".")
         ]
 
@@ -473,7 +490,8 @@ def _do_regen_phase(
     api_key = os.getenv("LLM_API_KEY", "")
     try:
         provider = make_provider(
-            name, api_key=api_key,
+            name,
+            api_key=api_key,
             model=os.getenv("LLM_MODEL"),
             base_url=os.getenv("LLM_BASE_URL"),
         )
@@ -485,9 +503,14 @@ def _do_regen_phase(
             old = _store.get(s)
             tree = _collect_tree_for_scope(s, REPO_ROOT)
             regen_one_scope(
-                scope=s, old_graph=old, changed_files=[],
-                file_tree=tree, head_sha=new_head or "HEAD",
-                provider=provider, store=_store, maps_dir=MAPS_DIR,
+                scope=s,
+                old_graph=old,
+                changed_files=[],
+                file_tree=tree,
+                head_sha=new_head or "HEAD",
+                provider=provider,
+                store=_store,
+                maps_dir=MAPS_DIR,
             )
             with _jobs_lock:
                 _jobs[run_id]["scopes_processed"].append(s)
@@ -501,7 +524,10 @@ def _safe_git_rev(ref: str, repo_root: Path) -> str | None:
     try:
         out = subprocess.check_output(
             ["git", "rev-parse", ref],
-            cwd=str(repo_root), text=True, stderr=subprocess.DEVNULL, timeout=5,
+            cwd=str(repo_root),
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
         )
         return out.strip() or None
     except Exception:
@@ -513,9 +539,7 @@ def _collect_tree_for_scope(scope: str, repo_root) -> str:
     base = Path(repo_root) / scope
     if not base.exists():
         return ""
-    files = sorted(
-        str(p.relative_to(repo_root)) for p in base.rglob("*") if p.is_file()
-    )
+    files = sorted(str(p.relative_to(repo_root)) for p in base.rglob("*") if p.is_file())
     if len(files) > 200:
         files = files[:200] + [f"... (+{len(files) - 200} more)"]
     return "\n".join(f"- {f}" for f in files)

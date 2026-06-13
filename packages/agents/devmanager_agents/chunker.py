@@ -135,8 +135,7 @@ class HybridChunker:
             else:
                 out.append(p)
         return [
-            Chunk(content=p, token_count=_count_tokens(p),
-                  metadata={"strategy": strategy.value})
+            Chunk(content=p, token_count=_count_tokens(p), metadata={"strategy": strategy.value})
             for p in out
             if p.strip()
         ]

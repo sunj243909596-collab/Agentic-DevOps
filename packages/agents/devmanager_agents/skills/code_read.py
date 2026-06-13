@@ -67,9 +67,7 @@ async def _grep_handler(args: dict, ctx: SkillContext) -> str:
 async def _glob_handler(args: dict, ctx: SkillContext) -> str:
     pattern = args["pattern"]
     matches = sorted(
-        str(path.relative_to(ctx.repo_dir))
-        for path in ctx.repo_dir.glob(pattern)
-        if path.is_file()
+        str(path.relative_to(ctx.repo_dir)) for path in ctx.repo_dir.glob(pattern) if path.is_file()
     )
     if not matches:
         return "(no files matched)"

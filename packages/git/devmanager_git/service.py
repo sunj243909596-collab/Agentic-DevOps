@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-from sqlalchemy import update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from devmanager_db.daos.analysis_run import AnalysisRunDAO
 from devmanager_db.daos.audit_event import AuditEventDAO
@@ -14,11 +11,14 @@ from devmanager_db.daos.change_unit import ChangeUnitDAO
 from devmanager_db.daos.repository import RepositoryDAO
 from devmanager_db.daos.setting import SettingDAO
 from devmanager_db.models import AnalysisRun
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from devmanager_git.codeowners import CodeownersParser
 from devmanager_git.differ import parse_diff
 from devmanager_git.fetcher import (
-    GitError,
     _NULL_SHA,
+    GitError,
     clone_or_fetch,
     detect_history_rewrite,
     get_diff_name_status,
@@ -69,9 +69,7 @@ async def ingest(run_id: uuid.UUID, db: AsyncSession) -> list[dict]:
         raise IngestionError(f"Repository {run.repository_id} not found")
 
     if not repo.clone_url:
-        raise IngestionError(
-            f"Repository {repo.full_name} has no clone_url — cannot fetch"
-        )
+        raise IngestionError(f"Repository {repo.full_name} has no clone_url — cannot fetch")
 
     # ── Phase 1: fetch ────────────────────────────────────────────────────────
     await run_dao.update_status(run_id, "git_fetching")
@@ -80,7 +78,7 @@ async def ingest(run_id: uuid.UUID, db: AsyncSession) -> list[dict]:
             actor="system",
             workflow_id=run_id,
             event_type="run.ingest_started",
-            event_timestamp=datetime.now(timezone.utc),
+            event_timestamp=datetime.now(UTC),
             metadata={"repository": repo.full_name, "target_sha": run.target_sha},
         )
     except Exception:
@@ -89,7 +87,11 @@ async def ingest(run_id: uuid.UUID, db: AsyncSession) -> list[dict]:
 
     repo_dir = _repo_dir(workspace_root, repo.repository_id)
     try:
-        await clone_or_fetch(repo.clone_url, repo_dir, access_token=getattr(repo, "access_token", None))
+        await clone_or_fetch(
+            repo.clone_url,
+            repo_dir,
+            access_token=getattr(repo, "access_token", None),
+        )
     except GitError as exc:
         await run_dao.update_status(run_id, "failed", failure_reason=str(exc))
         await db.commit()
@@ -136,9 +138,8 @@ async def ingest(run_id: uuid.UUID, db: AsyncSession) -> list[dict]:
                 unit["owner"] = owner
 
     # ── Phase 6: persist ChangeUnits ─────────────────────────────────────────
-    db_units: list = []
     if units:
-        db_units = await cu_dao.bulk_create(units)
+        await cu_dao.bulk_create(units)
 
     # ── Phase 7: hunk extraction (async, non-blocking on failure) ────────────
     if units:
@@ -151,15 +152,13 @@ async def ingest(run_id: uuid.UUID, db: AsyncSession) -> list[dict]:
                 hunks_dir=_hunks_dir(hunks_root, run_id),
             )
             if hunks_map:
-                updates = {
-                    cu_id: {"hunks_ref": ref} for cu_id, ref in hunks_map.items()
-                }
+                updates = {cu_id: {"hunks_ref": ref} for cu_id, ref in hunks_map.items()}
                 await cu_dao.bulk_update_hunks_and_owners(updates)
         except Exception:
             pass  # hunk extraction is best-effort; don't fail ingestion
 
     # ── Phase 8: finalise run ─────────────────────────────────────────────────
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await db.execute(
         update(AnalysisRun)
         .where(AnalysisRun.run_id == run_id)
