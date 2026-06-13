@@ -1,6 +1,7 @@
 [project]
 name = "devmanager-pm-integration"
 version = "0.1.0"
+license = "MIT"
 description = "DevManager-Agent — 自研需求平台 (PM) integration service"
 requires-python = ">=3.12"
 dependencies = [

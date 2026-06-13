@@ -1,6 +1,7 @@
 [project]
 name = "devmanager-reporting"
 version = "0.1.0"
+license = "MIT"
 description = "Markdown report generation for DevManager"
 requires-python = ">=3.12"
 dependencies = [

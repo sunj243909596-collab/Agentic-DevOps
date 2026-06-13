@@ -109,3 +109,7 @@ Common settings:
 - No unrestricted repository shell execution.
 - No employee performance, compensation, promotion, or termination decisions.
 - External comments, issue creation, remediation pull requests, and notifications require explicit policy approval.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
