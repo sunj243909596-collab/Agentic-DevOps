@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import time
 import uuid
 from pathlib import Path
 
@@ -8,6 +10,7 @@ from devmanager_db.daos.setting import SettingDAO
 from devmanager_db.models import AnalysisRun, Baseline, TriggerEvent
 from devmanager_git.fetcher import (
     GitError,
+    clone_or_fetch,
     list_refs,
     list_tree,
     read_file,
@@ -21,6 +24,12 @@ from api_gateway.dependencies import get_db, require_auth
 from api_gateway.schemas.models import PROVIDER_PATTERN, RepositoryResponse
 
 router = APIRouter(prefix="/v1/repositories", tags=["repositories"])
+
+
+def clone_or_fetch_sync(clone_url: str, repo_dir: Path, access_token: str | None = None) -> None:
+    """Sync wrapper around the async clone_or_fetch for asyncio.to_thread use."""
+    # clone_or_fetch is async; we wrap it for to_thread by running it in a new event loop
+    asyncio.run(clone_or_fetch(clone_url, repo_dir, access_token))
 
 
 class UpdateRepositoryIn(BaseModel):
@@ -197,3 +206,38 @@ async def read_repository_file(
         return {"ref": ref, "path": path, **(await read_file(repo_dir, ref, path))}
     except GitError as e:
         raise HTTPException(status_code=404, detail=f"file not found: {e}")
+
+
+@router.post("/{repository_id}/sync", response_model=dict)
+async def sync_repository(
+    repository_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _auth: str = Depends(require_auth),
+) -> dict:
+    """Trigger a synchronous git fetch/clone for this repository.
+
+    Blocks 5 seconds to several minutes depending on repository size.
+    Returns 200 with elapsed time on success, 502 with stderr on git failure.
+    """
+    dao = RepositoryDAO(db)
+    repo = await dao.get_by_id(repository_id)
+    if repo is None:
+        raise HTTPException(status_code=404, detail=f"Repository {repository_id} not found")
+    if not repo.clone_url or not repo.clone_url.startswith("https://"):
+        raise HTTPException(
+            status_code=422,
+            detail="clone_url 必须以 https:// 开头，请先在编辑仓库中配置",
+        )
+
+    workspace = await SettingDAO(db).get_value("git_workspace", "/tmp/devmanager/repos")
+    repo_dir = Path(workspace) / str(repository_id)
+
+    started = time.monotonic()
+    try:
+        await asyncio.to_thread(
+            clone_or_fetch_sync, repo.clone_url, repo_dir, repo.access_token
+        )
+    except GitError as e:
+        raise HTTPException(status_code=502, detail=f"git sync failed: {e}")
+    elapsed = round(time.monotonic() - started, 2)
+    return {"ok": True, "elapsed_sec": elapsed}
