@@ -13,7 +13,7 @@ from devmanager_git.fetcher import (
     read_file,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +31,16 @@ class UpdateRepositoryIn(BaseModel):
     status: str | None = Field(default=None, pattern="^(active|disabled|archived)$")
     default_branch: str | None = None
     provider: str | None = Field(default=None, pattern=PROVIDER_PATTERN)
+
+    @field_validator("clone_url")
+    @classmethod
+    def must_be_https(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return v
+        if not v.startswith("https://"):
+            preview = v[:30] + "..." if len(v) > 30 else v
+            raise ValueError(f"clone_url 必须以 https:// 开头（当前：{preview}）")
+        return v
 
 
 @router.get("", response_model=dict)
