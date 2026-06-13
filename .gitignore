@@ -70,7 +70,7 @@ desktop.ini
 
 # ── Prototype / scratch (kept for archival, but ignored) ────────────────────
 prototype/
-agents/
+/agents/
 evals/
 
 # ── Product / development design documents ──────────────────────────────────
