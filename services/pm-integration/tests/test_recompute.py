@@ -170,14 +170,17 @@ async def test_recompute_workload_time_window_filters(
             person_id=person.person_id,
         )
 
-    await recompute_workload(session, time_window="7d")
+    await recompute_workload(
+        session,
+        time_window="7d",
+        now=datetime(2026, 6, 10, 12, 0, 0, tzinfo=UTC),
+    )
     # "7d" 视窗：new 在 7 天内，old 已被过滤
-    # （注意：视窗起点按 runtime now 算，2026-06-10 视为 today 是 pytest 内定的"当前"）
-    # 实际我们 hard-code pm_updated_at 比较；可能 old 也会包含
-    # 因此只断言 "new" 一定在结果中
+    # 显式传 now=2026-06-10 12:00:00 UTC → cutoff = 2026-06-03 12:00:00 UTC
+    # new (2026-06-10) 落在视窗内，old (2026-06-02) 被排除
     row = await WorkloadSnapshotDAO(session).get(person.person_id, "7d")
     assert row is not None
-    assert row.open_issues >= 1  # 至少 new
+    assert row.open_issues == 1  # 只有 new
 
 
 # ── capacity ────────────────────────────────────────────────────────────────

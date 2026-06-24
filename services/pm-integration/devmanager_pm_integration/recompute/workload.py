@@ -32,6 +32,7 @@ async def recompute_workload(
     session: AsyncSession,
     *,
     time_window: str = "7d",
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """重算 workload_snapshot 全部 person 在指定 time_window 的行。
 
@@ -45,7 +46,8 @@ async def recompute_workload(
     persons = await person_dao.list_active()
 
     td = _window_to_timedelta(time_window)
-    cutoff = datetime.now(UTC) - td if td is not None else None
+    now = now or datetime.now(UTC)
+    cutoff = now - td if td is not None else None
 
     stats = {"persons": 0, "open": 0, "in_progress": 0, "completed": 0}
 

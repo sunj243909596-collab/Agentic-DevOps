@@ -257,9 +257,7 @@ async def sync_repository(
 
     lock = await _get_sync_lock(repository_id)
     if lock.locked():
-        raise HTTPException(
-            status_code=409, detail="Repository sync already in progress"
-        )
+        raise HTTPException(status_code=409, detail="Repository sync already in progress")
 
     workspace = await SettingDAO(db).get_value("git_workspace", "/tmp/devmanager/repos")
     repo_dir = Path(workspace) / str(repository_id)

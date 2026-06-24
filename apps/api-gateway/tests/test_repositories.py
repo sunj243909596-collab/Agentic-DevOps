@@ -1,16 +1,16 @@
 """Tests for repositories router — Pydantic validation + POST /sync endpoint."""
+
 from __future__ import annotations
 
 import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-from pydantic import ValidationError
-
 from api_gateway.dependencies import get_db
 from api_gateway.main import app
 from api_gateway.routers.repositories import UpdateRepositoryIn
+from httpx import ASGITransport, AsyncClient
+from pydantic import ValidationError
 
 
 class TestUpdateRepositoryInCloneUrl:
@@ -52,9 +52,12 @@ class TestUpdateRepositoryInCloneUrl:
 REPO_ID = uuid.UUID("84b52da7-e57e-41db-9813-066729bfd299")
 
 
-def _mock_db_with_repo(*, clone_url: str = "https://gitlab.example.com/org/repo.git",
-                       access_token: str | None = None,
-                       repo_exists: bool = True):
+def _mock_db_with_repo(
+    *,
+    clone_url: str = "https://gitlab.example.com/org/repo.git",
+    access_token: str | None = None,
+    repo_exists: bool = True,
+):
     """Build a mock AsyncSession with RepositoryDAO that returns a fake repo."""
     fake_repo = MagicMock()
     fake_repo.repository_id = REPO_ID
@@ -62,12 +65,16 @@ def _mock_db_with_repo(*, clone_url: str = "https://gitlab.example.com/org/repo.
     fake_repo.access_token = access_token
 
     class _MockRepoDAO:
-        def __init__(self, db): self._db = db
+        def __init__(self, db):
+            self._db = db
+
         async def get_by_id(self, repository_id):
             return fake_repo if repo_exists else None
 
     class _MockSettingDAO:
-        def __init__(self, db): self._db = db
+        def __init__(self, db):
+            self._db = db
+
         async def get_value(self, key, default=None):
             return "/tmp/devmanager/repos"
 
@@ -87,6 +94,7 @@ async def test_sync_repository_success(monkeypatch):
 
     app.dependency_overrides[get_db] = override_get_db
     try:
+
         def fake_clone_or_fetch(clone_url, repo_dir, access_token=None):
             return None  # success
 
@@ -104,12 +112,16 @@ async def test_sync_repository_success(monkeypatch):
         fake_repo.access_token = None
 
         class _FakeRepoDAO:
-            def __init__(self, _db): pass
+            def __init__(self, _db):
+                pass
+
             async def get_by_id(self, repository_id):
                 return fake_repo
 
         class _FakeSettingDAO:
-            def __init__(self, _db): pass
+            def __init__(self, _db):
+                pass
+
             async def get_value(self, key, default=None):
                 return "/tmp/devmanager/repos"
 
@@ -132,27 +144,26 @@ async def test_sync_repository_success(monkeypatch):
 @pytest.mark.asyncio
 async def test_sync_repository_404_when_not_found(monkeypatch):
     """POST /sync on a non-existent repository returns 404."""
-    from api_gateway.routers.repositories import RepositoryDAO
 
     db = MagicMock()
     db.bind = MagicMock()
     db.bind.dialect.name = "sqlite"
 
     class _RepoDAOMissing:
-        def __init__(self, _db): pass
-        async def get_by_id(self, repository_id): return None
+        def __init__(self, _db):
+            pass
 
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOMissing
-    )
+        async def get_by_id(self, repository_id):
+            return None
+
+    monkeypatch.setattr("api_gateway.routers.repositories.RepositoryDAO", _RepoDAOMissing)
 
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     try:
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
         assert r.status_code == 404
         body = r.json()
@@ -165,7 +176,6 @@ async def test_sync_repository_404_when_not_found(monkeypatch):
 @pytest.mark.asyncio
 async def test_sync_repository_422_when_clone_url_not_https(monkeypatch):
     """POST /sync rejects non-https clone_url (defense in depth, also covered by Pydantic)."""
-    from api_gateway.routers.repositories import RepositoryDAO
 
     db = MagicMock()
     db.bind = MagicMock()
@@ -177,20 +187,20 @@ async def test_sync_repository_422_when_clone_url_not_https(monkeypatch):
     fake_repo.access_token = None
 
     class _RepoDAOWithSsh:
-        def __init__(self, _db): pass
-        async def get_by_id(self, repository_id): return fake_repo
+        def __init__(self, _db):
+            pass
 
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOWithSsh
-    )
+        async def get_by_id(self, repository_id):
+            return fake_repo
+
+    monkeypatch.setattr("api_gateway.routers.repositories.RepositoryDAO", _RepoDAOWithSsh)
 
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     try:
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
         assert r.status_code == 422
         body = r.json()
@@ -204,7 +214,6 @@ async def test_sync_repository_422_when_clone_url_not_https(monkeypatch):
 async def test_sync_repository_502_on_git_error(monkeypatch):
     """POST /sync returns 502 with stderr detail when git fails."""
     from devmanager_git.fetcher import GitError
-    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
 
     db = MagicMock()
     db.bind = MagicMock()
@@ -216,24 +225,28 @@ async def test_sync_repository_502_on_git_error(monkeypatch):
     fake_repo.access_token = None
 
     class _RepoDAOOk:
-        def __init__(self, _db): pass
-        async def get_by_id(self, repository_id): return fake_repo
+        def __init__(self, _db):
+            pass
+
+        async def get_by_id(self, repository_id):
+            return fake_repo
 
     class _SettingDAOOk:
-        def __init__(self, _db): pass
-        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+        def __init__(self, _db):
+            pass
 
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
-    )
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
-    )
+        async def get_value(self, key, default=None):
+            return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr("api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk)
+    monkeypatch.setattr("api_gateway.routers.repositories.SettingDAO", _SettingDAOOk)
 
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     try:
+
         def fake_sync_that_fails(clone_url, repo_dir, access_token=None):
             raise GitError("git fetch failed: fatal: unable to update url base")
 
@@ -241,9 +254,7 @@ async def test_sync_repository_502_on_git_error(monkeypatch):
             "api_gateway.routers.repositories.clone_or_fetch_sync",
             fake_sync_that_fails,
         )
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
         assert r.status_code == 502
         body = r.json()
@@ -258,7 +269,6 @@ async def test_sync_repository_502_on_git_error(monkeypatch):
 async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
     """POST /sync truncates stderr to 8KB and appends marker."""
     from devmanager_git.fetcher import GitError
-    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
 
     db = MagicMock()
     db.bind = MagicMock()
@@ -270,22 +280,25 @@ async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
     fake_repo.access_token = None
 
     class _RepoDAOOk:
-        def __init__(self, _db): pass
-        async def get_by_id(self, repository_id): return fake_repo
+        def __init__(self, _db):
+            pass
+
+        async def get_by_id(self, repository_id):
+            return fake_repo
 
     class _SettingDAOOk:
-        def __init__(self, _db): pass
-        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+        def __init__(self, _db):
+            pass
 
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
-    )
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
-    )
+        async def get_value(self, key, default=None):
+            return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr("api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk)
+    monkeypatch.setattr("api_gateway.routers.repositories.SettingDAO", _SettingDAOOk)
 
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     try:
         huge_stderr = "x" * 20_000
@@ -297,9 +310,7 @@ async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
             "api_gateway.routers.repositories.clone_or_fetch_sync",
             fake_sync_huge_stderr,
         )
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post(f"/v1/repositories/{REPO_ID}/sync")
         assert r.status_code == 502
         body = r.json()
@@ -314,7 +325,6 @@ async def test_sync_repository_stderr_truncated_to_8kb(monkeypatch):
 async def test_sync_repository_409_on_concurrent_same_repo(monkeypatch):
     """A second sync on the same repository while first is in progress → 409."""
     import asyncio as _asyncio
-    from api_gateway.routers.repositories import RepositoryDAO, SettingDAO
 
     db = MagicMock()
     db.bind = MagicMock()
@@ -326,19 +336,21 @@ async def test_sync_repository_409_on_concurrent_same_repo(monkeypatch):
     fake_repo.access_token = None
 
     class _RepoDAOOk:
-        def __init__(self, _db): pass
-        async def get_by_id(self, repository_id): return fake_repo
+        def __init__(self, _db):
+            pass
+
+        async def get_by_id(self, repository_id):
+            return fake_repo
 
     class _SettingDAOOk:
-        def __init__(self, _db): pass
-        async def get_value(self, key, default=None): return "/tmp/devmanager/repos"
+        def __init__(self, _db):
+            pass
 
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk
-    )
-    monkeypatch.setattr(
-        "api_gateway.routers.repositories.SettingDAO", _SettingDAOOk
-    )
+        async def get_value(self, key, default=None):
+            return "/tmp/devmanager/repos"
+
+    monkeypatch.setattr("api_gateway.routers.repositories.RepositoryDAO", _RepoDAOOk)
+    monkeypatch.setattr("api_gateway.routers.repositories.SettingDAO", _SettingDAOOk)
 
     started = _asyncio.Event()
     release = _asyncio.Event()
@@ -346,12 +358,15 @@ async def test_sync_repository_409_on_concurrent_same_repo(monkeypatch):
 
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
 
     # Reset module-level lock dict between tests
     import api_gateway.routers.repositories as repo_mod
+
     repo_mod._REPO_SYNC_LOCKS.clear()
     try:
+
         def slow_sync(clone_url, repo_dir, access_token=None):
             # Block the worker thread until the test releases the event.
             # asyncio.Event.wait() must be driven by the event loop, so we
@@ -366,9 +381,7 @@ async def test_sync_repository_409_on_concurrent_same_repo(monkeypatch):
             slow_sync,
         )
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             # Launch first sync (background, will block)
             task1 = _asyncio.create_task(ac.post(f"/v1/repositories/{REPO_ID}/sync"))
             # Wait for the first to enter the lock
